@@ -1,0 +1,66 @@
+{
+    "name": "q-template-validator ",
+    "version": "0.0.1",
+    "description": "Ensure questionnaire templates are valid",
+    "main": "index.js",
+    "scripts": {
+        "test": "jest",
+        "coverage": "jest --coverage",
+        "lint": "eslint .",
+        "lint:fix": "eslint --fix ."
+    },
+    "author": "CICA",
+    "license": "MIT",
+    "_m0": {
+        "devDependencies": {
+            "eslint": "^6.8.0",
+            "eslint-config-airbnb-base": "^14.0.0",
+            "eslint-config-prettier": "^6.9.0",
+            "eslint-plugin-import": "^2.19.1",
+            "eslint-plugin-jest": "^23.3.0",
+            "eslint-plugin-prettier": "^3.1.2",
+            "fs-extra": "^8.1.0",
+            "husky": "^4.0.3",
+            "jest": "^24.9.0",
+            "lint-staged": "^9.5.0",
+            "prettier": "^1.19.1"
+        },
+        "blocks": [
+            ".eslintignore",
+            ".eslintrc.js",
+            ".huskyrc.js",
+            ".lintstagedrc.js",
+            ".prettierrc.js",
+            "jest.config.js",
+            ".gitignore"
+        ],
+        "files": [
+            ".editorconfig",
+            "LICENSE",
+            "stuff/____README____"
+        ]
+    },
+    "devDependencies": {
+        "eslint": "^6.8.0",
+        "eslint-config-airbnb-base": "^14.0.0",
+        "eslint-config-prettier": "^6.9.0",
+        "eslint-plugin-import": "^2.19.1",
+        "eslint-plugin-jest": "^23.3.0",
+        "eslint-plugin-prettier": "^3.1.2",
+        "fs-extra": "^8.1.0",
+        "husky": "^4.0.3",
+        "jest": "^24.9.0",
+        "jest-extended": "^0.11.5",
+        "lint-staged": "^9.5.0",
+        "prettier": "^1.19.1",
+        "q-base-config": "github:CriminalInjuriesCompensationAuthority/q-base-config#v0.6.0"
+    },
+    "dependencies": {
+        "ajv": "^6.12.0",
+        "ajv-errors": "^1.0.1",
+        "lodash.get": "^4.4.2",
+        "lodash.has": "^4.5.2",
+        "q-router": "github:CriminalInjuriesCompensationAuthority/q-router#v2.4.0",
+        "q-schema": "git+https://github.com/CriminalInjuriesCompensationAuthority/q-schema.git"
+    }
+}

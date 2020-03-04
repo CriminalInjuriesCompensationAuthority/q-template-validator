@@ -1,0 +1,6 @@
+#! m0-start
+coverage
+stuff
+#! m0-end
+
+**/node_modules
