@@ -303,6 +303,42 @@ describe('q-helper', () => {
         });
     });
 
+    describe('ensureAllConditionReferencesHaveCorrespondingQuestion', () => {
+        it('should return true if all state target conditions have a corresponding question', () => {
+            const validTemplate = getValidQuestionnaireTemplate();
+            const qHelper = createQuestionnaireTemplateHelper({
+                questionnaireTemplate: validTemplate
+            });
+
+            expect(qHelper.ensureAllConditionReferencesHaveCorrespondingQuestion()).toEqual(true);
+        });
+
+        it('should return an error one or more target conditions have no corresponding question', () => {
+            const validTemplate = getValidQuestionnaireTemplate();
+            const invalidTemplate = validTemplate;
+
+            // Make the valid questionnaire invalid
+            invalidTemplate.routes.states[
+                'p-applicant-british-citizen-or-eu-national'
+            ].on.ANSWER[0].cond[1] = '$.answers.p-foo.q-baz';
+
+            const qHelper = createQuestionnaireTemplateHelper({
+                questionnaireTemplate: invalidTemplate
+            });
+            const error = qHelper.ensureAllConditionReferencesHaveCorrespondingQuestion();
+
+            expect(error).toIncludeSameMembers([
+                {
+                    type: 'TargetConditionDataReferenceNotFound',
+                    source:
+                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond/1',
+                    description:
+                        "Target condition data reference '/sections/p-foo/properties/q-baz' not found"
+                }
+            ]);
+        });
+    });
+
     describe('ensureSectionSchemasAreValid', () => {
         describe('Given "examples" are present', () => {
             it('should return true if all section schemas are valid', () => {

@@ -38,6 +38,31 @@ function createQuestionnaireTemplateHelper({
         return [];
     }
 
+    function getAllConditions(state) {
+        const targets = _.get(state, 'on.ANSWER');
+
+        if (Array.isArray(targets)) {
+            return targets.reduce((acc, target, i) => {
+                const condition = target.cond;
+
+                if (condition) {
+                    acc.push({
+                        rule: condition,
+                        arrayIndex: i
+                    });
+                }
+
+                return acc;
+            }, []);
+        }
+
+        return [];
+    }
+
+    function isDataReference(element) {
+        return typeof element === 'string' && element.startsWith('$.');
+    }
+
     function routeExists(stateId, sourcePath) {
         if (stateId in states) {
             return true;
@@ -137,6 +162,78 @@ function createQuestionnaireTemplateHelper({
                         description: `Target '/routes/states/${target}' not found`
                     });
                 }
+            });
+
+            return acc;
+        }, []);
+
+        if (errors.length > 0) {
+            return errors;
+        }
+
+        return true;
+    }
+
+    // 3.1 - Do the target conditions have a corresponding section
+    function ensureAllConditionReferencesHaveCorrespondingQuestion() {
+        const errors = Object.keys(states).reduce((acc, stateId) => {
+            const state = states[stateId];
+            const conditions = getAllConditions(state);
+
+            conditions.forEach(condition => {
+                /*
+                    {
+                        target: 'p-applicant-redirect-to-our-other-application',
+                        cond: [
+                            '==',
+                            '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
+                            false
+                        ]
+                    }
+
+                    routes: {
+                        states: {
+                            'p-applicant-british-citizen-or-eu-national': {
+                                on: {
+                                    ANSWER: [
+                                        {
+                                            target: 'p-applicant-redirect-to-our-other-application',
+                                            cond: [
+                                                '==',
+                                                '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
+                                                false
+                                            ]
+                                        },
+                                        {
+                                            target: 'p-applicant-are-you-18-or-over',
+                                            cond: [
+                                                '==',
+                                                '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
+                                                true
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                */
+
+                condition.rule.forEach((element, j) => {
+                    if (isDataReference(element)) {
+                        const dataReferenceParts = element.split('.');
+                        const dataReference = `${dataReferenceParts[2]}.properties.${dataReferenceParts[3]}`;
+
+                        if (_.has(sections, dataReference) === false) {
+                            acc.push({
+                                type: 'TargetConditionDataReferenceNotFound',
+                                source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond/${j}`,
+                                description: `Target condition data reference '/sections/${dataReference.replace(
+                                    /\./g,
+                                    '/'
+                                )}' not found`
+                            });
+                        }
+                    }
+                });
             });
 
             return acc;
@@ -267,6 +364,7 @@ function createQuestionnaireTemplateHelper({
         ensureSummaryRouteExists,
         ensureConfirmationRouteExists,
         ensureRouteTargetsHaveCorrespondingState,
+        ensureAllConditionReferencesHaveCorrespondingQuestion,
         ensureSectionSchemasAreValid,
         ensureAllRoutesCanBeReached,
         validateTemplate
