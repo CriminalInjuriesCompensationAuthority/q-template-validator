@@ -303,6 +303,44 @@ describe('q-helper', () => {
         });
     });
 
+    describe('ensureAllConditionDataReferencesHaveCorrespondingQuestion', () => {
+        it('should return true if all state condition data references have a corresponding question', () => {
+            const validTemplate = getValidQuestionnaireTemplate();
+            const qHelper = createQuestionnaireTemplateHelper({
+                questionnaireTemplate: validTemplate
+            });
+
+            expect(qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion()).toEqual(
+                true
+            );
+        });
+
+        it('should return an error if one or more condition data references have no corresponding question', () => {
+            const validTemplate = getValidQuestionnaireTemplate();
+            const invalidTemplate = validTemplate;
+
+            // Make the valid questionnaire invalid
+            invalidTemplate.routes.states[
+                'p-applicant-british-citizen-or-eu-national'
+            ].on.ANSWER[0].cond[1] = '$.answers.p-foo.q-baz';
+
+            const qHelper = createQuestionnaireTemplateHelper({
+                questionnaireTemplate: invalidTemplate
+            });
+            const error = qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion();
+
+            expect(error).toIncludeSameMembers([
+                {
+                    type: 'ConditionDataReferenceNotFound',
+                    source:
+                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond/1',
+                    description:
+                        "Condition data reference '/sections/p-foo/properties/q-baz' not found"
+                }
+            ]);
+        });
+    });
+
     describe('ensureSectionSchemasAreValid', () => {
         describe('Given "examples" are present', () => {
             it('should return true if all section schemas are valid', () => {
@@ -590,6 +628,9 @@ describe('q-helper', () => {
             invalidTemplate.routes.states[
                 'p-applicant-british-citizen-or-eu-national'
             ].on.ANSWER[0].target = 'p-biz';
+            invalidTemplate.routes.states[
+                'p-applicant-british-citizen-or-eu-national'
+            ].on.ANSWER[0].cond[1] = '$.answers.p-foo.q-baz';
 
             delete invalidTemplate.sections['p-applicant-declaration'];
 
@@ -678,6 +719,13 @@ describe('q-helper', () => {
                     source: '/sections/p-applicant-are-you-18-or-over',
                     description:
                         "invalidExample '/sections/p-applicant-are-you-18-or-over/invalidExamples/1' should not pass schema validation"
+                },
+                {
+                    type: 'ConditionDataReferenceNotFound',
+                    source:
+                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond/1',
+                    description:
+                        "Condition data reference '/sections/p-foo/properties/q-baz' not found"
                 }
             ]);
         });

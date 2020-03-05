@@ -38,6 +38,31 @@ function createQuestionnaireTemplateHelper({
         return [];
     }
 
+    function getAllConditions(state) {
+        const targets = _.get(state, 'on.ANSWER');
+
+        if (Array.isArray(targets)) {
+            return targets.reduce((acc, target, i) => {
+                const condition = target.cond;
+
+                if (condition) {
+                    acc.push({
+                        elements: condition,
+                        arrayIndex: i
+                    });
+                }
+
+                return acc;
+            }, []);
+        }
+
+        return [];
+    }
+
+    function isDataReference(element) {
+        return typeof element === 'string' && element.startsWith('$.');
+    }
+
     function routeExists(stateId, sourcePath) {
         if (stateId in states) {
             return true;
@@ -149,6 +174,42 @@ function createQuestionnaireTemplateHelper({
         return true;
     }
 
+    // 3.1 - Do the condition data references have a corresponding question
+    function ensureAllConditionDataReferencesHaveCorrespondingQuestion() {
+        const errors = Object.keys(states).reduce((acc, stateId) => {
+            const state = states[stateId];
+            const conditions = getAllConditions(state);
+
+            conditions.forEach(condition => {
+                condition.elements.forEach((element, elementIndex) => {
+                    if (isDataReference(element)) {
+                        const dataReferenceParts = element.split('.');
+                        const dataReference = `${dataReferenceParts[2]}.properties.${dataReferenceParts[3]}`;
+
+                        if (_.has(sections, dataReference) === false) {
+                            acc.push({
+                                type: 'ConditionDataReferenceNotFound',
+                                source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond/${elementIndex}`,
+                                description: `Condition data reference '/sections/${dataReference.replace(
+                                    /\./g,
+                                    '/'
+                                )}' not found`
+                            });
+                        }
+                    }
+                });
+            });
+
+            return acc;
+        }, []);
+
+        if (errors.length > 0) {
+            return errors;
+        }
+
+        return true;
+    }
+
     // 4 - are all the schemas valid against their validData and invalidData
     function ensureSectionSchemasAreValid() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
@@ -228,6 +289,7 @@ function createQuestionnaireTemplateHelper({
                 ensureSummaryRouteExists(),
                 ensureConfirmationRouteExists(),
                 ensureRouteTargetsHaveCorrespondingState(),
+                ensureAllConditionDataReferencesHaveCorrespondingQuestion(),
                 ensureSectionSchemasAreValid()
             );
         }
@@ -267,6 +329,7 @@ function createQuestionnaireTemplateHelper({
         ensureSummaryRouteExists,
         ensureConfirmationRouteExists,
         ensureRouteTargetsHaveCorrespondingState,
+        ensureAllConditionDataReferencesHaveCorrespondingQuestion,
         ensureSectionSchemasAreValid,
         ensureAllRoutesCanBeReached,
         validateTemplate
