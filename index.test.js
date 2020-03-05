@@ -8,6 +8,24 @@ function getValidQuestionnaireTemplate() {
 }
 
 describe('q-helper', () => {
+    it('should accept custom format functions for ajv', () => {
+        const validTemplate = getValidQuestionnaireTemplate();
+
+        validTemplate.sections['p-applicant-enter-your-telephone-number'].properties[
+            'q-applicant-enter-your-telephone-number'
+        ].format = 'uk-mobile';
+
+        const dummyFormatFunctionAlwaysPassesValidation = () => true;
+        const qHelper = createQuestionnaireTemplateHelper({
+            questionnaireTemplate: validTemplate,
+            customSchemaFormats: {
+                'uk-mobile': dummyFormatFunctionAlwaysPassesValidation
+            }
+        });
+
+        expect(qHelper.validateTemplate()).toEqual(true);
+    });
+
     describe('isValidQuestionnaireDocument', () => {
         it("should return true if the template's document structure is correct", () => {
             const validTemplate = getValidQuestionnaireTemplate();
@@ -443,6 +461,40 @@ describe('q-helper', () => {
                                     type: 'boolean'
                                 },
                                 schemaPath: '#/properties/q-applicant-are-you-18-or-over/type'
+                            }
+                        ]
+                    }
+                ]);
+            });
+
+            it('should return error(s) if a custom format fails validation', () => {
+                const validTemplate = getValidQuestionnaireTemplate();
+
+                validTemplate.sections['p-applicant-enter-your-telephone-number'].properties[
+                    'q-applicant-enter-your-telephone-number'
+                ].format = 'uk-mobile';
+
+                const dummyFormatFunctionAlwaysFailsValidation = () => false;
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: validTemplate,
+                    customSchemaFormats: {
+                        'uk-mobile': dummyFormatFunctionAlwaysFailsValidation
+                    }
+                });
+                const errors = qHelper.ensureSectionSchemasAreValid();
+
+                expect(errors).toIncludeSameMembers([
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: '/sections/p-applicant-enter-your-telephone-number',
+                        description: [
+                            {
+                                dataPath: '/q-applicant-enter-your-telephone-number',
+                                keyword: 'format',
+                                message: 'should match format "uk-mobile"',
+                                params: {format: 'uk-mobile'},
+                                schemaPath:
+                                    '#/properties/q-applicant-enter-your-telephone-number/format'
                             }
                         ]
                     }

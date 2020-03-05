@@ -14,7 +14,8 @@ function createQuestionnaireTemplateHelper({
     qSchema = defaults.qSchema,
     createQPathsInstance = defaults.createQPathsInstance,
     _ = defaults._,
-    questionnaireTemplate
+    questionnaireTemplate,
+    customSchemaFormats = {}
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
@@ -23,7 +24,8 @@ function createQuestionnaireTemplateHelper({
         allErrors: true,
         jsonPointers: true,
         format: 'full',
-        coerceTypes: false
+        coerceTypes: false,
+        formats: customSchemaFormats
     }); // options can be passed, e.g. {allErrors: true}
 
     AjvErrors(ajv);
