@@ -47,7 +47,7 @@ function createQuestionnaireTemplateHelper({
 
                 if (condition) {
                     acc.push({
-                        rule: condition,
+                        elements: condition,
                         arrayIndex: i
                     });
                 }
@@ -174,59 +174,23 @@ function createQuestionnaireTemplateHelper({
         return true;
     }
 
-    // 3.1 - Do the target conditions have a corresponding section
-    function ensureAllConditionReferencesHaveCorrespondingQuestion() {
+    // 3.1 - Do the condition data references have a corresponding question
+    function ensureAllConditionDataReferencesHaveCorrespondingQuestion() {
         const errors = Object.keys(states).reduce((acc, stateId) => {
             const state = states[stateId];
             const conditions = getAllConditions(state);
 
             conditions.forEach(condition => {
-                /*
-                    {
-                        target: 'p-applicant-redirect-to-our-other-application',
-                        cond: [
-                            '==',
-                            '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
-                            false
-                        ]
-                    }
-
-                    routes: {
-                        states: {
-                            'p-applicant-british-citizen-or-eu-national': {
-                                on: {
-                                    ANSWER: [
-                                        {
-                                            target: 'p-applicant-redirect-to-our-other-application',
-                                            cond: [
-                                                '==',
-                                                '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
-                                                false
-                                            ]
-                                        },
-                                        {
-                                            target: 'p-applicant-are-you-18-or-over',
-                                            cond: [
-                                                '==',
-                                                '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
-                                                true
-                                            ]
-                                        }
-                                    ]
-                                }
-                            }
-                */
-
-                condition.rule.forEach((element, j) => {
+                condition.elements.forEach((element, elementIndex) => {
                     if (isDataReference(element)) {
                         const dataReferenceParts = element.split('.');
                         const dataReference = `${dataReferenceParts[2]}.properties.${dataReferenceParts[3]}`;
 
                         if (_.has(sections, dataReference) === false) {
                             acc.push({
-                                type: 'TargetConditionDataReferenceNotFound',
-                                source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond/${j}`,
-                                description: `Target condition data reference '/sections/${dataReference.replace(
+                                type: 'ConditionDataReferenceNotFound',
+                                source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond/${elementIndex}`,
+                                description: `Condition data reference '/sections/${dataReference.replace(
                                     /\./g,
                                     '/'
                                 )}' not found`
@@ -325,6 +289,7 @@ function createQuestionnaireTemplateHelper({
                 ensureSummaryRouteExists(),
                 ensureConfirmationRouteExists(),
                 ensureRouteTargetsHaveCorrespondingState(),
+                ensureAllConditionDataReferencesHaveCorrespondingQuestion(),
                 ensureSectionSchemasAreValid()
             );
         }
@@ -364,7 +329,7 @@ function createQuestionnaireTemplateHelper({
         ensureSummaryRouteExists,
         ensureConfirmationRouteExists,
         ensureRouteTargetsHaveCorrespondingState,
-        ensureAllConditionReferencesHaveCorrespondingQuestion,
+        ensureAllConditionDataReferencesHaveCorrespondingQuestion,
         ensureSectionSchemasAreValid,
         ensureAllRoutesCanBeReached,
         validateTemplate
