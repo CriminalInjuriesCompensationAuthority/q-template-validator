@@ -29,6 +29,7 @@
     "dependencies": {
         "ajv": "^6.12.0",
         "ajv-errors": "^1.0.1",
+        "ajv-keywords": "^3.5.0",
         "lodash.get": "^4.4.2",
         "lodash.has": "^4.5.2",
         "q-router": "github:CriminalInjuriesCompensationAuthority/q-router#v2.5.0",

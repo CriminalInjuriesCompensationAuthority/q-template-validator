@@ -3,6 +3,7 @@
 const defaults = {_: {}};
 defaults.Ajv = require('ajv');
 defaults.AjvErrors = require('ajv-errors');
+defaults.AjvKeywords = require('ajv-keywords');
 defaults.qSchema = require('q-schema');
 defaults.createQPathsInstance = require('./q-paths-helper');
 defaults._.has = require('lodash.has');
@@ -11,6 +12,7 @@ defaults._.get = require('lodash.get');
 function createQuestionnaireTemplateHelper({
     Ajv = defaults.Ajv,
     AjvErrors = defaults.AjvErrors,
+    AjvKeywords = defaults.AjvKeywords,
     qSchema = defaults.qSchema,
     createQPathsInstance = defaults.createQPathsInstance,
     _ = defaults._,
@@ -29,6 +31,7 @@ function createQuestionnaireTemplateHelper({
     }); // options can be passed, e.g. {allErrors: true}
 
     AjvErrors(ajv);
+    AjvKeywords(ajv, ['formatMinimum', 'formatMaximum']);
 
     function getAllTargets(state) {
         const targets = _.get(state, 'on.ANSWER');
