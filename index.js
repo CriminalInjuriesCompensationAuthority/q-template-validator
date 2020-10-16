@@ -1,34 +1,21 @@
 'use strict';
 
 const defaults = {_: {}};
-defaults.Ajv = require('ajv');
-defaults.AjvErrors = require('ajv-errors');
 defaults.qSchema = require('q-schema');
 defaults.createQPathsInstance = require('./q-paths-helper');
 defaults._.has = require('lodash.has');
 defaults._.get = require('lodash.get');
 
 function createQuestionnaireTemplateHelper({
-    Ajv = defaults.Ajv,
-    AjvErrors = defaults.AjvErrors,
     qSchema = defaults.qSchema,
     createQPathsInstance = defaults.createQPathsInstance,
     _ = defaults._,
     questionnaireTemplate,
-    customSchemaFormats = {}
+    validate
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
     const {states} = routes;
-    const ajv = new Ajv({
-        allErrors: true,
-        jsonPointers: true,
-        format: 'full',
-        coerceTypes: false,
-        formats: customSchemaFormats
-    }); // options can be passed, e.g. {allErrors: true}
-
-    AjvErrors(ajv);
 
     function getAllTargets(state) {
         const targets = _.get(state, 'on.ANSWER');
@@ -79,10 +66,8 @@ function createQuestionnaireTemplateHelper({
 
     // 1 - is the questionnaire valid against the questionnaire schema
     function isValidDocument() {
-        const validate = ajv.compile(qSchema);
-        const valid = validate(questionnaire);
-
-        if (valid) {
+        const result = validate(qSchema, questionnaire);
+        if (result.valid === true) {
             return true;
         }
 
@@ -218,14 +203,13 @@ function createQuestionnaireTemplateHelper({
             const sectionSchema = sections[sectionId];
             const validExamples = _.get(sectionSchema, 'examples');
             const invalidExamples = _.get(sectionSchema, 'invalidExamples');
-            const validate = ajv.compile(sectionSchema);
 
             // for each valid example ensure there are no errors
             if (validExamples) {
                 validExamples.forEach(validExample => {
-                    const valid = validate(validExample);
+                    const result = validate(sectionSchema, validExample);
 
-                    if (!valid) {
+                    if (result.valid === false) {
                         acc.push({
                             type: 'SectionSchemaFailed',
                             source: `/sections/${sectionId}`,
@@ -238,9 +222,8 @@ function createQuestionnaireTemplateHelper({
             // for each invalid example ensure there *are* errors
             if (invalidExamples) {
                 invalidExamples.forEach((invalidExample, i) => {
-                    const valid = validate(invalidExample);
-
-                    if (valid) {
+                    const result = validate(sectionSchema, invalidExample);
+                    if (result.valid === true) {
                         acc.push({
                             type: 'SectionSchemaFailed',
                             source: `/sections/${sectionId}`,
