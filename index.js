@@ -74,7 +74,7 @@ function createQuestionnaireTemplateHelper({
         return {
             type: 'InvalidTemplateStructure',
             source: '/',
-            description: validate.errors
+            description: result.errors
         };
     }
 
@@ -213,7 +213,7 @@ function createQuestionnaireTemplateHelper({
                         acc.push({
                             type: 'SectionSchemaFailed',
                             source: `/sections/${sectionId}`,
-                            description: validate.errors
+                            description: result.errors
                         });
                     }
                 });

@@ -1,5 +1,8 @@
 'use strict';
 
+const Ajv = require('ajv');
+const AjvErrors = require('ajv-errors');
+
 const createQuestionnaireTemplateHelper = require('./index');
 const validQTemplate = require('./fixtures/valid-questionnaire-template');
 
@@ -10,17 +13,33 @@ function getValidQuestionnaireTemplate() {
 describe('q-helper', () => {
     it('should accept custom format functions for ajv', () => {
         const validTemplate = getValidQuestionnaireTemplate();
-
         validTemplate.sections['p-applicant-enter-your-telephone-number'].properties[
             'q-applicant-enter-your-telephone-number'
-        ].format = 'uk-mobile';
-
+        ].format = 'mobile-uk';
         const dummyFormatFunctionAlwaysPassesValidation = () => true;
+
+        const validatorInstance = new Ajv({
+            allErrors: true,
+            jsonPointers: true,
+            format: 'full',
+            coerceTypes: false
+        });
+        AjvErrors(validatorInstance);
+        validatorInstance.addFormat('mobile-uk', dummyFormatFunctionAlwaysPassesValidation);
+
+        const validate = (schema, data) => {
+            const validator = validatorInstance.compile(schema);
+            const valid = validator(data);
+            return {
+                valid,
+                errors: validator.errors
+            };
+        };
+
         const qHelper = createQuestionnaireTemplateHelper({
             questionnaireTemplate: validTemplate,
-            customSchemaFormats: {
-                'uk-mobile': dummyFormatFunctionAlwaysPassesValidation
-            }
+            validatorInstance,
+            validate
         });
 
         expect(qHelper.validateTemplate()).toEqual(true);
@@ -29,8 +48,27 @@ describe('q-helper', () => {
     describe('isValidQuestionnaireDocument', () => {
         it("should return true if the template's document structure is correct", () => {
             const validTemplate = getValidQuestionnaireTemplate();
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
+                validatorInstance,
+                validate
             });
 
             expect(qHelper.isValidDocument()).toEqual(true);
@@ -44,8 +82,27 @@ describe('q-helper', () => {
             delete invalidTemplate.type;
             delete invalidTemplate.version;
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const error = qHelper.isValidDocument();
 
@@ -91,8 +148,27 @@ describe('q-helper', () => {
             delete invalidTemplate.routes.states['p--confirmation'];
             delete invalidTemplate.routes.states.system;
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const errors = qHelper.ensureAllSectionsHaveCorrespondingRoute();
 
@@ -135,8 +211,27 @@ describe('q-helper', () => {
             delete invalidTemplate.sections['p-applicant-declaration'];
             delete invalidTemplate.sections['p-applicant-redirect-to-our-other-application'];
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const errors = qHelper.ensureAllRoutesHaveCorrespondingSection();
 
@@ -173,8 +268,27 @@ describe('q-helper', () => {
             // Make the valid questionnaire invalid
             delete invalidTemplate.routes.states['p-applicant-declaration'];
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const error = qHelper.ensureInitialRouteExists();
 
@@ -189,8 +303,27 @@ describe('q-helper', () => {
     describe('ensureSummaryRouteExists', () => {
         it('should return true if the "summary" route has a corresponding state', () => {
             const validTemplate = getValidQuestionnaireTemplate();
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
+                validatorInstance,
+                validate
             });
 
             expect(qHelper.ensureSummaryRouteExists()).toEqual(true);
@@ -203,8 +336,27 @@ describe('q-helper', () => {
             // Make the valid questionnaire invalid
             delete invalidTemplate.routes.states['p--check-your-answers'];
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const error = qHelper.ensureSummaryRouteExists();
 
@@ -219,8 +371,27 @@ describe('q-helper', () => {
     describe('ensureConfirmationRouteExists', () => {
         it('should return true if the "confirmation" route has a corresponding state', () => {
             const validTemplate = getValidQuestionnaireTemplate();
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
+                validatorInstance,
+                validate
             });
 
             expect(qHelper.ensureConfirmationRouteExists()).toEqual(true);
@@ -233,8 +404,27 @@ describe('q-helper', () => {
             // Make the valid questionnaire invalid
             delete invalidTemplate.routes.states['p--confirmation'];
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const error = qHelper.ensureConfirmationRouteExists();
 
@@ -249,8 +439,27 @@ describe('q-helper', () => {
     describe('ensureRouteTargetsHaveCorrespondingState', () => {
         it('should return true if all state targets have a corresponding section', () => {
             const validTemplate = getValidQuestionnaireTemplate();
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
+                validatorInstance,
+                validate
             });
 
             expect(qHelper.ensureRouteTargetsHaveCorrespondingState()).toEqual(true);
@@ -264,8 +473,27 @@ describe('q-helper', () => {
             delete invalidTemplate.routes.states['p-offender-enter-offenders-name'];
             delete invalidTemplate.routes.states['p-applicant-redirect-to-our-other-application'];
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const errors = qHelper.ensureRouteTargetsHaveCorrespondingState();
 
@@ -324,8 +552,27 @@ describe('q-helper', () => {
     describe('ensureAllConditionDataReferencesHaveCorrespondingQuestion', () => {
         it('should return true if all state condition data references have a corresponding question', () => {
             const validTemplate = getValidQuestionnaireTemplate();
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
+                validatorInstance,
+                validate
             });
 
             expect(qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion()).toEqual(
@@ -342,8 +589,27 @@ describe('q-helper', () => {
                 'p-applicant-british-citizen-or-eu-national'
             ].on.ANSWER[0].cond[1] = '$.answers.p-foo.q-baz';
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const error = qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion();
 
@@ -363,8 +629,27 @@ describe('q-helper', () => {
         describe('Given "examples" are present', () => {
             it('should return true if all section schemas are valid', () => {
                 const validTemplate = getValidQuestionnaireTemplate();
+                const validatorInstance = new Ajv({
+                    allErrors: true,
+                    jsonPointers: true,
+                    format: 'full',
+                    coerceTypes: false
+                });
+                AjvErrors(validatorInstance);
+
+                const validate = (schema, data) => {
+                    const validator = validatorInstance.compile(schema);
+                    const valid = validator(data);
+                    return {
+                        valid,
+                        errors: validator.errors
+                    };
+                };
+
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: validTemplate
+                    questionnaireTemplate: validTemplate,
+                    validatorInstance,
+                    validate
                 });
 
                 expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
@@ -427,8 +712,27 @@ describe('q-helper', () => {
                     ]
                 };
 
+                const validatorInstance = new Ajv({
+                    allErrors: true,
+                    jsonPointers: true,
+                    format: 'full',
+                    coerceTypes: false
+                });
+                AjvErrors(validatorInstance);
+
+                const validate = (schema, data) => {
+                    const validator = validatorInstance.compile(schema);
+                    const valid = validator(data);
+                    return {
+                        valid,
+                        errors: validator.errors
+                    };
+                };
+
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: invalidTemplate
+                    questionnaireTemplate: invalidTemplate,
+                    validatorInstance,
+                    validate
                 });
                 const errors = qHelper.ensureSectionSchemasAreValid();
 
@@ -472,15 +776,33 @@ describe('q-helper', () => {
 
                 validTemplate.sections['p-applicant-enter-your-telephone-number'].properties[
                     'q-applicant-enter-your-telephone-number'
-                ].format = 'uk-mobile';
-
+                ].format = 'mobile-uk';
                 const dummyFormatFunctionAlwaysFailsValidation = () => false;
+
+                const validatorInstance = new Ajv({
+                    allErrors: true,
+                    jsonPointers: true,
+                    format: 'full',
+                    coerceTypes: false
+                });
+                AjvErrors(validatorInstance);
+                validatorInstance.addFormat('mobile-uk', dummyFormatFunctionAlwaysFailsValidation);
+
+                const validate = (schema, data) => {
+                    const validator = validatorInstance.compile(schema);
+                    const valid = validator(data);
+                    return {
+                        valid,
+                        errors: validator.errors
+                    };
+                };
+
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: validTemplate,
-                    customSchemaFormats: {
-                        'uk-mobile': dummyFormatFunctionAlwaysFailsValidation
-                    }
+                    validatorInstance,
+                    validate
                 });
+
                 const errors = qHelper.ensureSectionSchemasAreValid();
 
                 expect(errors).toIncludeSameMembers([
@@ -491,8 +813,8 @@ describe('q-helper', () => {
                             {
                                 dataPath: '/q-applicant-enter-your-telephone-number',
                                 keyword: 'format',
-                                message: 'should match format "uk-mobile"',
-                                params: {format: 'uk-mobile'},
+                                message: 'should match format "mobile-uk"',
+                                params: {format: 'mobile-uk'},
                                 schemaPath:
                                     '#/properties/q-applicant-enter-your-telephone-number/format'
                             }
@@ -505,8 +827,27 @@ describe('q-helper', () => {
         describe('Given "invalidExamples" are present', () => {
             it('should return true if all section schemas fail validation against their invalid examples', () => {
                 const validTemplate = getValidQuestionnaireTemplate();
+                const validatorInstance = new Ajv({
+                    allErrors: true,
+                    jsonPointers: true,
+                    format: 'full',
+                    coerceTypes: false
+                });
+                AjvErrors(validatorInstance);
+
+                const validate = (schema, data) => {
+                    const validator = validatorInstance.compile(schema);
+                    const valid = validator(data);
+                    return {
+                        valid,
+                        errors: validator.errors
+                    };
+                };
+
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: validTemplate
+                    questionnaireTemplate: validTemplate,
+                    validatorInstance,
+                    validate
                 });
 
                 expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
@@ -569,8 +910,27 @@ describe('q-helper', () => {
                     ]
                 };
 
+                const validatorInstance = new Ajv({
+                    allErrors: true,
+                    jsonPointers: true,
+                    format: 'full',
+                    coerceTypes: false
+                });
+                AjvErrors(validatorInstance);
+
+                const validate = (schema, data) => {
+                    const validator = validatorInstance.compile(schema);
+                    const valid = validator(data);
+                    return {
+                        valid,
+                        errors: validator.errors
+                    };
+                };
+
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: invalidTemplate
+                    questionnaireTemplate: invalidTemplate,
+                    validatorInstance,
+                    validate
                 });
                 const errors = qHelper.ensureSectionSchemasAreValid();
 
@@ -601,8 +961,27 @@ describe('q-helper', () => {
     describe('ensureAllRoutesCanBeReached', () => {
         it('should return true if all routes can be reached', () => {
             const validTemplate = getValidQuestionnaireTemplate();
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
+                validatorInstance,
+                validate
             });
 
             expect(qHelper.ensureAllRoutesCanBeReached()).toEqual(true);
@@ -615,8 +994,27 @@ describe('q-helper', () => {
             // Make the valid questionnaire invalid - add an orphan state
             invalidTemplate.routes.states.foo = {type: 'final'};
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const errors = qHelper.ensureAllRoutesCanBeReached();
 
@@ -633,8 +1031,27 @@ describe('q-helper', () => {
     describe('validate', () => {
         it('should return true if the questionnaire template is valid', () => {
             const validTemplate = getValidQuestionnaireTemplate();
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
+                validatorInstance,
+                validate
             });
 
             expect(qHelper.validateTemplate()).toEqual(true);
@@ -647,8 +1064,27 @@ describe('q-helper', () => {
             // Make the valid questionnaire invalid
             delete invalidTemplate.routes.initial;
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const errors = qHelper.validateTemplate();
 
@@ -713,8 +1149,27 @@ describe('q-helper', () => {
                 ]
             };
 
+            const validatorInstance = new Ajv({
+                allErrors: true,
+                jsonPointers: true,
+                format: 'full',
+                coerceTypes: false
+            });
+            AjvErrors(validatorInstance);
+
+            const validate = (schema, data) => {
+                const validator = validatorInstance.compile(schema);
+                const valid = validator(data);
+                return {
+                    valid,
+                    errors: validator.errors
+                };
+            };
+
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                validatorInstance,
+                validate
             });
             const errors = qHelper.validateTemplate();
 
