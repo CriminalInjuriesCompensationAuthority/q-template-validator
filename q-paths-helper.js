@@ -10,73 +10,39 @@ function createQuestionnairePathsHelper({
     createQuestionnaireRouter = defaults.createQuestionnaireRouter,
     ignoreStates = ['system']
 } = {}) {
-    function isUsedForRouting(sectionId, states) {
-        let isRoutingQuestion = false;
+    function getRoutingQuestionIds(states) {
+        const routingQuestionIds = new Set();
+        const statesString = JSON.stringify(states);
 
         // loop through states
-        Object.keys(states).forEach(state => {
-            const sectionRoutes = states[state];
-
-            // If there is an "on" attribute there may be conditions
-            if ('on' in sectionRoutes) {
-                const targets = sectionRoutes.on.ANSWER;
-
-                // If the target is an array it might contain conditions
-                if (Array.isArray(targets)) {
-                    const cascade = targets.some(target => {
-                        if ('cond' in target) {
-                            // Do any of the conditions reference the sectionId
-                            return target.cond.some(element =>
-                                String(element).includes(`.${sectionId}.`)
-                            );
-                        }
-
-                        return false;
-                    });
-
-                    if (cascade) {
-                        // If startIndex and i are equal, this is a section that relies on its own answer(s)
-                        // for routing. Don't remove it from the progress, but everything after it (i + 1).
-                        // return startIndex === i ? i + 1 : i;
-
-                        isRoutingQuestion = true;
-                    }
-                }
+        Object.keys(states).forEach(stateId => {
+            if (statesString.includes(`.${stateId}.`)) {
+                routingQuestionIds.add(stateId);
             }
         });
 
-        return isRoutingQuestion;
+        return routingQuestionIds;
     }
 
-    function getAllTargets(state) {
-        const targets = _.get(state, 'on.ANSWER') || [];
-        const targetIds = targets.map(targetDefinition => targetDefinition.target);
+    function getAllTargetIds(states) {
+        const targetIds = [];
+
+        // loop through states
+        Object.keys(states).forEach(stateId => {
+            const state = states[stateId];
+            const stateTargets = _.get(state, 'on.ANSWER') || [];
+            const stateTargetIds = stateTargets.map(targetDefinition => targetDefinition.target);
+
+            targetIds.push(...stateTargetIds);
+        });
 
         return new Set(targetIds);
     }
 
-    function createStateTracker(template) {
-        const {initial, states} = template.routes;
-        const stateTargetIds = new Map();
-        const allTargetIds = new Set([initial]);
-
-        Object.keys(states).forEach(stateId => {
-            const state = states[stateId];
-            const targetIds = getAllTargets(state);
-
-            stateTargetIds.set(stateId, targetIds);
-            targetIds.forEach(targetId => allTargetIds.add(targetId));
-        });
-
-        return {
-            stateTargetIds,
-            allTargetIds
-        };
-    }
-
-    function getValidExamples(stateId, template) {
-        const validExamples = _.get(template, `sections.${stateId}.examples`);
-        const containsRoutingQuestion = isUsedForRouting(stateId, template.routes.states);
+    function getValidExamples(stateId, template, routingQuestionIds) {
+        const validExamples =
+            template.sections && template.sections[stateId] && template.sections[stateId].examples;
+        const containsRoutingQuestion = routingQuestionIds.has(stateId);
 
         if (Array.isArray(validExamples) && validExamples.length > 0) {
             return containsRoutingQuestion ? validExamples : [validExamples[0]];
@@ -91,76 +57,95 @@ function createQuestionnairePathsHelper({
         return [];
     }
 
-    function traverseAllPaths({
-        template,
-        stateId = template.routes.initial,
-        router = createQuestionnaireRouter(template),
-        paths = new Set(),
-        stateTracker = createStateTracker(template)
-    } = {}) {
-        const state = template.routes.states[stateId];
+    function traversePaths(router, currentState, paths, routingQuestionIds) {
+        const {id, context: questionnaire} = currentState;
+        const currentStateDefinition = questionnaire.routes.states[id];
 
-        // Reached the end of a journey, save path
-        if (state.type && state.type === 'final') {
-            paths.add(router.current().context.progress.join(','));
-
-            return null;
+        // if this is a final state, then our work is done, record the journey
+        if (currentStateDefinition.type === 'final') {
+            paths.push(questionnaire.progress.join(','));
+            return {paths, unvisitedTargets: false};
         }
 
-        const validExamples = getValidExamples(stateId, template);
+        const examples = getValidExamples(id, questionnaire, routingQuestionIds);
 
-        for (let j = 0; j < validExamples.length; j += 1) {
-            const next = router.next(validExamples[j], stateId);
+        // lets see if we can trigger any remaining targets
+        for (let i = 0; i < examples.length; i += 1) {
+            const next = router.next(examples[i], id);
+            const nextMeta = next.meta;
+            const nextFromTransition = nextMeta.fromTransition;
+            let result;
 
-            if (stateTracker) {
-                stateTracker.stateTargetIds.get(stateId).delete(next.id);
+            if (nextFromTransition === true) {
+                const nextTransitionDefinition = nextMeta.transitionDefinition;
+                const transition = nextTransitionDefinition.value[nextTransitionDefinition.index];
+                transition.triggered = true;
+
+                result = traversePaths(router, next, paths, routingQuestionIds);
+
+                if (result.unvisitedTargets === false) {
+                    // don't do this transition again all upstream targets have been triggered
+                    // eslint-disable-next-line no-underscore-dangle
+                    transition._skip = true;
+
+                    if (
+                        currentStateDefinition.on.ANSWER.every(
+                            // eslint-disable-next-line no-underscore-dangle
+                            transitionInstance => transitionInstance._skip === true
+                        )
+                    ) {
+                        currentStateDefinition.type = 'final';
+                        return {paths, unvisitedTargets: false};
+                    }
+                }
             }
-
-            traverseAllPaths({
-                template,
-                stateId: next.id,
-                router,
-                paths,
-                stateTracker
-            });
         }
 
-        return {
-            paths: Array.from(paths),
-            state: stateTracker
-        };
+        return {paths};
     }
 
-    function getUnvisitedPaths(template, traversalState) {
-        const {states} = template.routes;
+    function getUnvisitedPaths(routes) {
+        const {states} = routes;
+        const initialId = routes.initial;
+        const targetIds = getAllTargetIds(states);
 
         return Object.keys(states).reduce((acc, stateId) => {
             if (ignoreStates.includes(stateId)) {
                 return acc;
             }
 
-            if (traversalState.allTargetIds.has(stateId) === false) {
-                acc.push(`?,${stateId}`);
+            const state = states[stateId];
 
+            if (targetIds.has(stateId) === false && stateId !== initialId) {
+                acc.push(`?,${stateId}`);
+            }
+
+            if (state.type === 'final') {
                 return acc;
             }
 
-            traversalState.stateTargetIds.get(stateId).forEach(targetId => {
-                acc.push(`${stateId},${targetId}`);
-            });
+            const targets = state.on.ANSWER;
+
+            for (let i = 0; i < targets.length; i += 1) {
+                const target = targets[i];
+
+                if (target.triggered !== true) {
+                    acc.push(`${stateId},${target.target}`);
+                }
+            }
 
             return acc;
         }, []);
     }
 
     function getPaths(template) {
-        const templateCopy = JSON.parse(JSON.stringify(template));
-        const traversed = traverseAllPaths({template: templateCopy});
-        const unvisitedPaths = getUnvisitedPaths(templateCopy, traversed.state);
+        const router = createQuestionnaireRouter(template);
+        const routingQuestionIds = getRoutingQuestionIds(router.current().context.routes.states);
+        const traversed = traversePaths(router, router.current(), [], routingQuestionIds);
 
         return {
             visited: traversed.paths,
-            unvisited: unvisitedPaths
+            unvisited: getUnvisitedPaths(router.current().context.routes)
         };
     }
 

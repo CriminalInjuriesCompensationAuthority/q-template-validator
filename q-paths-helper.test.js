@@ -3,21 +3,10 @@
 const createQuestionnairePathsHelper = require('./q-paths-helper');
 
 /*
-    need to determine what questions are used for routing. This can be done at q-generator time. This then allows us to
-    determine if a states' valid objects all have to be used (to cover all routing) or just the first valid object to allow to app to proceed e.g.
-
-    if question b is a boolean and is used for routing purposes then we need to traverse the true and false paths. If it wasn't used for routing then
-    we could pick any of its valid objects as it wouldn't matter for identifying all valid paths.
-
-
     3 scenarios:
     1 - target relies on current state only
     2 - target relies on previous state only
     3 - target relies on current state and previous state(s)
-
-    we need data to satisfy state "f"
-
-    we also need data to satisfy each of state "f"s targets
 */
 
 describe('q-paths', () => {
@@ -51,6 +40,7 @@ describe('q-paths', () => {
             const paths = qPaths.getPaths(questionnaireTemplate);
 
             expect(paths.visited).toEqual(['a,b']);
+            expect(paths.unvisited).toEqual([]);
         });
 
         it('should throw for a routing question', () => {
@@ -124,7 +114,7 @@ describe('q-paths', () => {
             const paths = qPaths.getPaths(questionnaireTemplate);
 
             expect(paths.visited).toEqual(['a,b']);
-            // TODO expect(qPaths.getAnswers().a['q-a']).toEqual(true);
+            expect(paths.unvisited).toEqual([]);
         });
 
         it('should use all examples for routing questions', () => {
@@ -180,7 +170,7 @@ describe('q-paths', () => {
             const paths = qPaths.getPaths(questionnaireTemplate);
 
             expect(paths.visited).toEqual(['a,b', 'a,c', 'a,d']);
-            // TODO expect(qPaths.getAnswers().a['q-a']).toEqual('foo');
+            expect(paths.unvisited).toEqual([]);
         });
 
         describe('Given a state containing conditional targets', () => {
@@ -232,6 +222,7 @@ describe('q-paths', () => {
                     const paths = qPaths.getPaths(questionnaireTemplate);
 
                     expect(paths.visited).toEqual(['a,b', 'a,c']);
+                    expect(paths.unvisited).toEqual([]);
                 });
             });
 
@@ -291,6 +282,7 @@ describe('q-paths', () => {
                     const paths = qPaths.getPaths(questionnaireTemplate);
 
                     expect(paths.visited).toEqual(['a,b,c', 'a,b,d']);
+                    expect(paths.unvisited).toEqual([]);
                 });
             });
 
@@ -381,7 +373,7 @@ describe('q-paths', () => {
                                                 cond: [
                                                     '==',
                                                     ['+', '$.answers.a.q-a', '$.answers.c.q-c'],
-                                                    10
+                                                    11
                                                 ]
                                             },
                                             {
@@ -391,7 +383,6 @@ describe('q-paths', () => {
                                     }
                                 },
                                 e: {type: 'final'},
-                                // ee: {type: 'final'},
                                 f: {type: 'final'}
                             }
                         }
@@ -400,9 +391,8 @@ describe('q-paths', () => {
                     const qPaths = createQuestionnairePathsHelper();
                     const paths = qPaths.getPaths(questionnaireTemplate);
 
-                    expect(paths.visited.sort()).toEqual(
-                        ['a,b,c,d,e', /* 'a,b,c,d,ee', */ 'a,b,c,d,f'].sort()
-                    );
+                    expect(paths.visited).toEqual(['a,b,c,d,e', 'a,b,c,d,f', 'a,b,c,d,e']);
+                    expect(paths.unvisited).toEqual([]);
                 });
             });
 
@@ -481,6 +471,7 @@ describe('q-paths', () => {
                     const paths = qPaths.getPaths(questionnaireTemplate);
 
                     expect(paths.visited.sort()).toEqual(['a,b,c', 'a,b,d', 'a,b,e'].sort());
+                    expect(paths.unvisited).toEqual([]);
                 });
             });
 
@@ -625,8 +616,9 @@ describe('q-paths', () => {
                     const paths = qPaths.getPaths(questionnaireTemplate);
 
                     expect(paths.visited.sort()).toEqual(
-                        ['a,b,c,e,f,g', 'a,b,c,e,f,i', 'a,b,d,e,f,h', 'a,b,d,e,f,i'].sort()
+                        ['a,b,c,e,f,g', 'a,b,c,e,f,i', 'a,b,d,e,f,h'].sort()
                     );
+                    expect(paths.unvisited).toEqual([]);
                 });
             });
         });
@@ -770,7 +762,42 @@ describe('q-paths', () => {
             const paths = qPaths.getPaths(questionnaireTemplate);
 
             expect(paths.visited).toEqual(['a,b']);
-            expect(paths.unvisited).toEqual(['?,c', 'd,z']);
+            expect(paths.unvisited).toEqual(['?,c', 'c,d', 'd,z']);
+        });
+
+        it('should ignore specified states', () => {
+            const questionnaireTemplate = {
+                sections: {
+                    a: {
+                        examples: [{}]
+                    },
+                    b: {}
+                },
+                routes: {
+                    initial: 'a',
+                    states: {
+                        a: {
+                            on: {
+                                ANSWER: [
+                                    {
+                                        target: 'b'
+                                    }
+                                ]
+                            }
+                        },
+                        b: {type: 'final'},
+                        c: {type: 'final'}
+                    }
+                }
+            };
+
+            const qPaths = createQuestionnairePathsHelper({
+                ignoreStates: ['c']
+            });
+            const paths = qPaths.getPaths(questionnaireTemplate);
+
+            expect(paths.visited).toEqual(['a,b']);
+            expect(paths.unvisited).toEqual([]);
         });
     });
 });
