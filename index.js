@@ -262,8 +262,8 @@ function createQuestionnaireTemplateHelper({
 
     // 5 - can all route permutations be reached
     function ensureAllRoutesCanBeReached() {
-        const qPaths = createQPathsInstance();
-        const paths = qPaths.getPaths(questionnaire);
+        const qPaths = createQPathsInstance({template: questionnaire});
+        const paths = qPaths.getPaths();
         const unvisitedPaths = paths.unvisited;
 
         if (unvisitedPaths.length > 0) {

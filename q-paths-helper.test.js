@@ -36,8 +36,8 @@ describe('q-paths', () => {
                 }
             };
 
-            const qPaths = createQuestionnairePathsHelper();
-            const paths = qPaths.getPaths(questionnaireTemplate);
+            const qPaths = createQuestionnairePathsHelper({template: questionnaireTemplate});
+            const paths = qPaths.getPaths();
 
             expect(paths.visited).toEqual(['a,b']);
             expect(paths.unvisited).toEqual([]);
@@ -72,10 +72,10 @@ describe('q-paths', () => {
                 }
             };
 
-            const qPaths = createQuestionnairePathsHelper();
+            const qPaths = createQuestionnairePathsHelper({template: questionnaireTemplate});
 
             expect(() => {
-                qPaths.getPaths(questionnaireTemplate);
+                qPaths.getPaths();
             }).toThrow(
                 Error(
                     'Section "a" contains a routing question, however the section contains no "examples" to trigger the routing rules'
@@ -110,8 +110,8 @@ describe('q-paths', () => {
                 }
             };
 
-            const qPaths = createQuestionnairePathsHelper();
-            const paths = qPaths.getPaths(questionnaireTemplate);
+            const qPaths = createQuestionnairePathsHelper({template: questionnaireTemplate});
+            const paths = qPaths.getPaths();
 
             expect(paths.visited).toEqual(['a,b']);
             expect(paths.unvisited).toEqual([]);
@@ -165,9 +165,9 @@ describe('q-paths', () => {
             };
 
             const qPaths = createQuestionnairePathsHelper({
-                questionnaireTemplate
+                template: questionnaireTemplate
             });
-            const paths = qPaths.getPaths(questionnaireTemplate);
+            const paths = qPaths.getPaths();
 
             expect(paths.visited).toEqual(['a,b', 'a,c', 'a,d']);
             expect(paths.unvisited).toEqual([]);
@@ -218,8 +218,10 @@ describe('q-paths', () => {
                         }
                     };
 
-                    const qPaths = createQuestionnairePathsHelper();
-                    const paths = qPaths.getPaths(questionnaireTemplate);
+                    const qPaths = createQuestionnairePathsHelper({
+                        template: questionnaireTemplate
+                    });
+                    const paths = qPaths.getPaths();
 
                     expect(paths.visited).toEqual(['a,b', 'a,c']);
                     expect(paths.unvisited).toEqual([]);
@@ -278,15 +280,17 @@ describe('q-paths', () => {
                         }
                     };
 
-                    const qPaths = createQuestionnairePathsHelper();
-                    const paths = qPaths.getPaths(questionnaireTemplate);
+                    const qPaths = createQuestionnairePathsHelper({
+                        template: questionnaireTemplate
+                    });
+                    const paths = qPaths.getPaths();
 
                     expect(paths.visited).toEqual(['a,b,c', 'a,b,d']);
                     expect(paths.unvisited).toEqual([]);
                 });
             });
 
-            describe('And the conditions rely solely on a multiple previous state', () => {
+            describe('And the conditions rely solely on multiple previous states', () => {
                 it('should proceed to the next state given the previous states', () => {
                     const questionnaireTemplate = {
                         sections: {
@@ -388,8 +392,10 @@ describe('q-paths', () => {
                         }
                     };
 
-                    const qPaths = createQuestionnairePathsHelper();
-                    const paths = qPaths.getPaths(questionnaireTemplate);
+                    const qPaths = createQuestionnairePathsHelper({
+                        template: questionnaireTemplate
+                    });
+                    const paths = qPaths.getPaths();
 
                     expect(paths.visited).toEqual(['a,b,c,d,e', 'a,b,c,d,f', 'a,b,c,d,e']);
                     expect(paths.unvisited).toEqual([]);
@@ -467,8 +473,10 @@ describe('q-paths', () => {
                         }
                     };
 
-                    const qPaths = createQuestionnairePathsHelper();
-                    const paths = qPaths.getPaths(questionnaireTemplate);
+                    const qPaths = createQuestionnairePathsHelper({
+                        template: questionnaireTemplate
+                    });
+                    const paths = qPaths.getPaths();
 
                     expect(paths.visited.sort()).toEqual(['a,b,c', 'a,b,d', 'a,b,e'].sort());
                     expect(paths.unvisited).toEqual([]);
@@ -612,8 +620,10 @@ describe('q-paths', () => {
                         }
                     };
 
-                    const qPaths = createQuestionnairePathsHelper();
-                    const paths = qPaths.getPaths(questionnaireTemplate);
+                    const qPaths = createQuestionnairePathsHelper({
+                        template: questionnaireTemplate
+                    });
+                    const paths = qPaths.getPaths();
 
                     expect(paths.visited.sort()).toEqual(
                         ['a,b,c,e,f,g', 'a,b,c,e,f,i', 'a,b,d,e,f,h'].sort()
@@ -674,8 +684,8 @@ describe('q-paths', () => {
                 }
             };
 
-            const qPaths = createQuestionnairePathsHelper();
-            const paths = qPaths.getPaths(questionnaireTemplate);
+            const qPaths = createQuestionnairePathsHelper({template: questionnaireTemplate});
+            const paths = qPaths.getPaths();
 
             expect(paths.unvisited).toEqual(['a,d']);
         });
@@ -708,8 +718,8 @@ describe('q-paths', () => {
                 }
             };
 
-            const qPaths = createQuestionnairePathsHelper();
-            const paths = qPaths.getPaths(questionnaireTemplate);
+            const qPaths = createQuestionnairePathsHelper({template: questionnaireTemplate});
+            const paths = qPaths.getPaths();
 
             expect(paths.visited).toEqual(['a,b']);
             expect(paths.unvisited).toEqual(['?,c']);
@@ -758,8 +768,8 @@ describe('q-paths', () => {
                 }
             };
 
-            const qPaths = createQuestionnairePathsHelper();
-            const paths = qPaths.getPaths(questionnaireTemplate);
+            const qPaths = createQuestionnairePathsHelper({template: questionnaireTemplate});
+            const paths = qPaths.getPaths();
 
             expect(paths.visited).toEqual(['a,b']);
             expect(paths.unvisited).toEqual(['?,c', 'c,d', 'd,z']);
@@ -792,9 +802,10 @@ describe('q-paths', () => {
             };
 
             const qPaths = createQuestionnairePathsHelper({
-                ignoreStates: ['c']
+                ignoreStates: ['c'],
+                template: questionnaireTemplate
             });
-            const paths = qPaths.getPaths(questionnaireTemplate);
+            const paths = qPaths.getPaths();
 
             expect(paths.visited).toEqual(['a,b']);
             expect(paths.unvisited).toEqual([]);

@@ -1,16 +1,22 @@
 'use strict';
 
-const defaults = {_: {}};
-defaults._.has = require('lodash.has');
-defaults._.get = require('lodash.get');
+const defaults = {};
+
+defaults.getObjectValueByPath = require('lodash.get');
 defaults.createQuestionnaireRouter = require('q-router');
 
 function createQuestionnairePathsHelper({
-    _ = defaults._,
-    createQuestionnaireRouter = defaults.createQuestionnaireRouter,
-    ignoreStates = ['system']
+    template,
+    ignoreStates = ['system'],
+    getObjectValueByPath = defaults.getObjectValueByPath,
+    createQuestionnaireRouter = defaults.createQuestionnaireRouter
 } = {}) {
-    function getRoutingQuestionIds(states) {
+    const router = createQuestionnaireRouter(template);
+    const localTemplate = router.current().context;
+    const {sections, routes} = localTemplate;
+    const {initial: initialId, states} = routes;
+
+    function getRoutingQuestionIds() {
         const routingQuestionIds = new Set();
         const statesString = JSON.stringify(states);
 
@@ -24,13 +30,15 @@ function createQuestionnairePathsHelper({
         return routingQuestionIds;
     }
 
-    function getAllTargetIds(states) {
+    const routingQuestionIds = getRoutingQuestionIds();
+
+    function getAllTargetIds() {
         const targetIds = [];
 
         // loop through states
         Object.keys(states).forEach(stateId => {
             const state = states[stateId];
-            const stateTargets = _.get(state, 'on.ANSWER') || [];
+            const stateTargets = getObjectValueByPath(state, 'on.ANSWER') || [];
             const stateTargetIds = stateTargets.map(targetDefinition => targetDefinition.target);
 
             targetIds.push(...stateTargetIds);
@@ -39,9 +47,8 @@ function createQuestionnairePathsHelper({
         return new Set(targetIds);
     }
 
-    function getValidExamples(stateId, template, routingQuestionIds) {
-        const validExamples =
-            template.sections && template.sections[stateId] && template.sections[stateId].examples;
+    function getValidExamples(stateId) {
+        const validExamples = sections && sections[stateId] && sections[stateId].examples;
         const containsRoutingQuestion = routingQuestionIds.has(stateId);
 
         if (Array.isArray(validExamples) && validExamples.length > 0) {
@@ -57,45 +64,46 @@ function createQuestionnairePathsHelper({
         return [];
     }
 
-    function traversePaths(router, currentState, paths, routingQuestionIds) {
-        const {id, context: questionnaire} = currentState;
-        const currentStateDefinition = questionnaire.routes.states[id];
+    function traversePaths({currentSection, paths} = {}) {
+        const {id, context: questionnaire} = currentSection;
+        const currentSectionDefinition = questionnaire.routes.states[id];
 
-        // if this is a final state, then our work is done, record the journey
-        if (currentStateDefinition.type === 'final') {
+        if (currentSectionDefinition.type === 'final') {
             paths.push(questionnaire.progress.join(','));
-            return {paths, unvisitedTargets: false};
+            return {paths, targetsStillToVisit: false};
         }
 
-        const examples = getValidExamples(id, questionnaire, routingQuestionIds);
+        const examples = getValidExamples(id);
 
-        // lets see if we can trigger any remaining targets
         for (let i = 0; i < examples.length; i += 1) {
-            const next = router.next(examples[i], id);
-            const nextMeta = next.meta;
-            const nextFromTransition = nextMeta.fromTransition;
-            let result;
+            const nextSection = router.next(examples[i], id);
 
-            if (nextFromTransition === true) {
-                const nextTransitionDefinition = nextMeta.transitionDefinition;
-                const transition = nextTransitionDefinition.value[nextTransitionDefinition.index];
-                transition.triggered = true;
+            if (nextSection.meta.fromTransition === true) {
+                const successfulTransitionDefinition =
+                    nextSection.meta.transitionDefinition.value[
+                        nextSection.meta.transitionDefinition.index
+                    ];
 
-                result = traversePaths(router, next, paths, routingQuestionIds);
+                successfulTransitionDefinition.triggered = true;
 
-                if (result.unvisitedTargets === false) {
-                    // don't do this transition again all upstream targets have been triggered
+                const traversalResult = traversePaths({
+                    currentSection: nextSection,
+                    paths
+                });
+
+                if (traversalResult.targetsStillToVisit === false) {
+                    // don't do this transition again. All its upstream targets have been triggered.
                     // eslint-disable-next-line no-underscore-dangle
-                    transition._skip = true;
+                    successfulTransitionDefinition._skip = true;
 
-                    if (
-                        currentStateDefinition.on.ANSWER.every(
-                            // eslint-disable-next-line no-underscore-dangle
-                            transitionInstance => transitionInstance._skip === true
-                        )
-                    ) {
-                        currentStateDefinition.type = 'final';
-                        return {paths, unvisitedTargets: false};
+                    const allTargetsVisited = currentSectionDefinition.on.ANSWER.every(
+                        // eslint-disable-next-line no-underscore-dangle
+                        transitionInstance => transitionInstance._skip === true
+                    );
+
+                    if (allTargetsVisited) {
+                        currentSectionDefinition.type = 'final';
+                        return {paths, targetsStillToVisit: false};
                     }
                 }
             }
@@ -104,9 +112,7 @@ function createQuestionnairePathsHelper({
         return {paths};
     }
 
-    function getUnvisitedPaths(routes) {
-        const {states} = routes;
-        const initialId = routes.initial;
+    function getUnvisitedPaths() {
         const targetIds = getAllTargetIds(states);
 
         return Object.keys(states).reduce((acc, stateId) => {
@@ -138,14 +144,15 @@ function createQuestionnairePathsHelper({
         }, []);
     }
 
-    function getPaths(template) {
-        const router = createQuestionnaireRouter(template);
-        const routingQuestionIds = getRoutingQuestionIds(router.current().context.routes.states);
-        const traversed = traversePaths(router, router.current(), [], routingQuestionIds);
+    function getPaths() {
+        const traversed = traversePaths({
+            currentSection: router.current(),
+            paths: []
+        });
 
         return {
             visited: traversed.paths,
-            unvisited: getUnvisitedPaths(router.current().context.routes)
+            unvisited: getUnvisitedPaths()
         };
     }
 
