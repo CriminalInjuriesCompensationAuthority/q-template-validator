@@ -32,7 +32,7 @@
         "lodash.get": "^4.4.2",
         "lodash.has": "^4.5.2",
         "q-router": "github:CriminalInjuriesCompensationAuthority/q-router#v2.5.3",
-        "q-schema": "github:CriminalInjuriesCompensationAuthority/q-schema#v1.0.1"
+        "q-schema": "github:CriminalInjuriesCompensationAuthority/q-schema#v2.0.0"
     },
     "_m0": {
         "devDependencies": {

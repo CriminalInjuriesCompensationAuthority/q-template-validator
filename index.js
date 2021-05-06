@@ -186,7 +186,7 @@ function createQuestionnaireTemplateHelper({
                 condition.elements.forEach((element, elementIndex) => {
                     if (isDataReference(element)) {
                         const dataReferenceParts = element.split('.');
-                        const dataReference = `${dataReferenceParts[2]}.properties.${dataReferenceParts[3]}`;
+                        const dataReference = `${dataReferenceParts[2]}.schema.properties.${dataReferenceParts[3]}`;
 
                         if (_.has(sections, dataReference) === false) {
                             acc.push({
@@ -215,7 +215,7 @@ function createQuestionnaireTemplateHelper({
     // 4 - are all the schemas valid against their validData and invalidData
     function ensureSectionSchemasAreValid() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
-            const sectionSchema = sections[sectionId];
+            const sectionSchema = sections[sectionId].schema;
             const validExamples = _.get(sectionSchema, 'examples');
             const invalidExamples = _.get(sectionSchema, 'invalidExamples');
             const validate = ajv.compile(sectionSchema);
@@ -228,7 +228,7 @@ function createQuestionnaireTemplateHelper({
                     if (!valid) {
                         acc.push({
                             type: 'SectionSchemaFailed',
-                            source: `/sections/${sectionId}`,
+                            source: `/sections/${sectionId}/schema`,
                             description: validate.errors
                         });
                     }
@@ -243,8 +243,8 @@ function createQuestionnaireTemplateHelper({
                     if (valid) {
                         acc.push({
                             type: 'SectionSchemaFailed',
-                            source: `/sections/${sectionId}`,
-                            description: `invalidExample '/sections/${sectionId}/invalidExamples/${i}' should not pass schema validation`
+                            source: `/sections/${sectionId}/schema`,
+                            description: `invalidExample '/sections/${sectionId}/schema/invalidExamples/${i}' should not pass schema validation`
                         });
                     }
                 });
@@ -296,10 +296,11 @@ function createQuestionnaireTemplateHelper({
             );
         }
 
+        // TODO: reinstate this when https://github.com/CriminalInjuriesCompensationAuthority/q-template-validator/issues/11 is resolved
         // Only run this is if everything else is valid
-        if (results.every(result => result === true)) {
-            results.push(ensureAllRoutesCanBeReached());
-        }
+        // if (results.every(result => result === true)) {
+        //     results.push(ensureAllRoutesCanBeReached());
+        // }
 
         // Each result could be an array of errors. Add all array elements to a single array
         const errors = results.reduce((acc, result) => {
