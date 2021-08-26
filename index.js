@@ -324,6 +324,42 @@ function createQuestionnaireTemplateHelper({
         return true;
     }
 
+    // Remove parts of a schema structure in order to test compiled schemas
+    /* eslint-disable no-param-reassign */
+    function removeSchemaElements(obj, unwantedKeyArray) {
+        unwantedKeyArray.forEach(unwantedKey => {
+            Object.keys(obj).forEach(key => {
+                if (unwantedKey === key) {
+                    delete obj[key];
+                } else if (key === 'required' && Array.isArray(obj[key])) {
+                    obj[key] = obj[key].filter(e => e !== unwantedKey);
+                } else if (typeof obj[key] === 'object') {
+                    removeSchemaElements(obj[key], unwantedKeyArray);
+                }
+            });
+        });
+        return obj;
+    }
+    /* eslint-enable no-param-reassign */
+
+    // Check if compiled document is valid.
+    // removedElementsArray - Array of strings which will be removed form the qSchema object, eg ["examples", "invalidExamples"]
+    function isValidCompiledDocument(removedElementsArray) {
+        const expectedSchema = removeSchemaElements(qSchema, removedElementsArray);
+        const validate = ajv.compile(expectedSchema);
+        const valid = validate(questionnaire);
+
+        if (valid) {
+            return true;
+        }
+
+        return {
+            type: 'InvalidTemplateStructure',
+            source: '/',
+            description: validate.errors
+        };
+    }
+
     return Object.freeze({
         isValidDocument,
         ensureAllSectionsHaveCorrespondingRoute,
@@ -335,7 +371,9 @@ function createQuestionnaireTemplateHelper({
         ensureAllConditionDataReferencesHaveCorrespondingQuestion,
         ensureSectionSchemasAreValid,
         ensureAllRoutesCanBeReached,
-        validateTemplate
+        validateTemplate,
+        removeSchemaElements,
+        isValidCompiledDocument
     });
 }
 
