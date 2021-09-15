@@ -898,6 +898,166 @@ describe('q-helper', () => {
 
                 expect(qTemplateHelper.isValidCompiledDocument(['b'])).toEqual(true);
             });
+
+            it('should return a single error if the template document is invalid', () => {
+                const invalidTemplate = {
+                    foo: 1,
+                    bar: 'abc',
+                    biz: {
+                        a: 'foo',
+                        c: 'bar'
+                    },
+                    sections: {},
+                    routes: {
+                        states: {}
+                    }
+                };
+
+                // Make the valid questionnaire invalid
+                delete invalidTemplate.foo;
+
+                const qTemplateHelper = createQuestionnaireTemplateHelper({
+                    qSchema: {
+                        type: 'object',
+                        properties: {
+                            foo: {
+                                type: 'integer'
+                            },
+                            bar: {
+                                type: 'string'
+                            },
+                            biz: {
+                                type: 'object',
+                                properties: {
+                                    a: {
+                                        type: 'string'
+                                    },
+                                    b: {
+                                        type: 'string'
+                                    },
+                                    c: {
+                                        type: 'string'
+                                    }
+                                },
+                                required: ['a', 'b', 'c']
+                            },
+                            sections: {
+                                type: 'object'
+                            },
+                            routes: {
+                                type: 'object',
+                                properties: {
+                                    states: {
+                                        type: 'object'
+                                    }
+                                }
+                            }
+                        },
+                        required: ['foo'],
+                        additionalProperties: false
+                    },
+                    questionnaireTemplate: invalidTemplate
+                });
+                const errors = qTemplateHelper.isValidCompiledDocument(['b']);
+
+                expect(errors).toEqual({
+                    type: 'InvalidTemplateStructure',
+                    source: '/',
+                    description: [
+                        {
+                            dataPath: '',
+                            keyword: 'required',
+                            message: "should have required property 'foo'",
+                            params: {missingProperty: 'foo'},
+                            schemaPath: '#/required'
+                        }
+                    ]
+                });
+            });
+
+            it('should return an array of errors if the template is invalid', () => {
+                const invalidTemplate = {
+                    foo: 1,
+                    bar: 'abc',
+                    biz: {
+                        a: 'foo',
+                        c: 'bar'
+                    },
+                    sections: {},
+                    routes: {
+                        states: {}
+                    }
+                };
+
+                // Make the valid questionnaire invalid
+                delete invalidTemplate.foo;
+                delete invalidTemplate.bar;
+
+                const qTemplateHelper = createQuestionnaireTemplateHelper({
+                    qSchema: {
+                        type: 'object',
+                        properties: {
+                            foo: {
+                                type: 'integer'
+                            },
+                            bar: {
+                                type: 'string'
+                            },
+                            biz: {
+                                type: 'object',
+                                properties: {
+                                    a: {
+                                        type: 'string'
+                                    },
+                                    b: {
+                                        type: 'string'
+                                    },
+                                    c: {
+                                        type: 'string'
+                                    }
+                                },
+                                required: ['a', 'b', 'c']
+                            },
+                            sections: {
+                                type: 'object'
+                            },
+                            routes: {
+                                type: 'object',
+                                properties: {
+                                    states: {
+                                        type: 'object'
+                                    }
+                                }
+                            }
+                        },
+                        required: ['foo', 'bar'],
+                        additionalProperties: false
+                    },
+                    questionnaireTemplate: invalidTemplate
+                });
+                const errors = qTemplateHelper.isValidCompiledDocument(['b']);
+
+                expect(errors).toEqual({
+                    type: 'InvalidTemplateStructure',
+                    source: '/',
+                    description: [
+                        {
+                            dataPath: '',
+                            keyword: 'required',
+                            message: "should have required property 'foo'",
+                            params: {missingProperty: 'foo'},
+                            schemaPath: '#/required'
+                        },
+                        {
+                            dataPath: '',
+                            keyword: 'required',
+                            message: "should have required property 'bar'",
+                            params: {missingProperty: 'bar'},
+                            schemaPath: '#/required'
+                        }
+                    ]
+                });
+            });
         });
     });
 });
