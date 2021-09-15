@@ -327,18 +327,19 @@ function createQuestionnaireTemplateHelper({
     // Remove parts of a schema structure in order to test compiled schemas
     /* eslint-disable no-param-reassign */
     function removeSchemaElements(obj, unwantedKeyArray) {
+        const result = obj;
         unwantedKeyArray.forEach(unwantedKey => {
-            Object.keys(obj).forEach(key => {
+            Object.keys(result).forEach(key => {
                 if (unwantedKey === key) {
-                    delete obj[key];
-                } else if (key === 'required' && Array.isArray(obj[key])) {
-                    obj[key] = obj[key].filter(e => e !== unwantedKey);
-                } else if (typeof obj[key] === 'object') {
-                    removeSchemaElements(obj[key], unwantedKeyArray);
+                    delete result[key];
+                } else if (key === 'required' && Array.isArray(result[key])) {
+                    result[key] = result[key].filter(e => e !== unwantedKey);
+                } else if (typeof result[key] === 'object') {
+                    removeSchemaElements(result[key], unwantedKeyArray);
                 }
             });
         });
-        return obj;
+        return result;
     }
     /* eslint-enable no-param-reassign */
 
