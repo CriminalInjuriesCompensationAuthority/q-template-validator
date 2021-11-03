@@ -2193,7 +2193,7 @@ const validQTemplate = {
     answers: {},
     progress: ['p-applicant-declaration'],
     meta: {
-        questionnaireDocumentVersion: '2.0.0',
+        questionnaireDocumentVersion: '3.0.0',
         onComplete: {
             tasks: [
                 {
@@ -2205,6 +2205,15 @@ const validQTemplate = {
                     }
                 }
             ]
+        }
+    },
+    taxonomies: {
+        'theme-object': {
+            taxa: {
+                theme: {
+                    title: 'foobar'
+                }
+            }
         }
     }
 };
