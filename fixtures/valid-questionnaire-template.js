@@ -2208,10 +2208,10 @@ const validQTemplate = {
         }
     },
     taxonomies: {
-        'theme-object': {
+        'some-category': {
             taxa: {
-                theme: {
-                    title: 'foobar'
+                'some-theme': {
+                    title: 'Some theme title'
                 }
             }
         }
