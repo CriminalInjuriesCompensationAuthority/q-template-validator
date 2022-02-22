@@ -20,6 +20,38 @@ const validQTemplate = {
                 invalidExamples: [{foo: true}]
             }
         },
+        'p-mainapplicant-declaration-under-12': {
+            schema: {
+                $schema: 'http://json-schema.org/draft-07/schema#',
+                type: 'object',
+                title: 'Declaration',
+                additionalProperties: false,
+                properties: {
+                    'applicant-declaration': {
+                        description:
+                            '\n                <p class="govuk-body">By continuing you confirm that the information you will give is true as far as you know.</p>\n                {{ govukWarningText({\n                    text: "If you deliberately give false or misleading information, you may get less compensation or be prosecuted.",\n                    iconFallbackText: "Warning"\n                }) }}\n            '
+                    }
+                },
+                examples: [{}],
+                invalidExamples: [{foo: true}]
+            }
+        },
+        'p-mainapplicant-declaration-12-and-over': {
+            schema: {
+                $schema: 'http://json-schema.org/draft-07/schema#',
+                type: 'object',
+                title: 'Declaration',
+                additionalProperties: false,
+                properties: {
+                    'applicant-declaration': {
+                        description:
+                            '\n                <p class="govuk-body">By continuing you confirm that the information you will give is true as far as you know.</p>\n                {{ govukWarningText({\n                    text: "If you deliberately give false or misleading information, you may get less compensation or be prosecuted.",\n                    iconFallbackText: "Warning"\n                }) }}\n            '
+                    }
+                },
+                examples: [{}],
+                invalidExamples: [{foo: true}]
+            }
+        },
         'p-applicant-british-citizen-or-eu-national': {
             schema: {
                 $schema: 'http://json-schema.org/draft-07/schema#',
@@ -1555,10 +1587,32 @@ const validQTemplate = {
     routes: {
         initial: 'p-applicant-declaration',
         referrer: 'https://claim-criminal-injuries-compensation.service.justice.gov.uk/start-page',
-        summary: 'p--check-your-answers',
+        summary: [
+            'p-applicant-declaration',
+            'p-mainapplicant-declaration-under-12',
+            'p-mainapplicant-declaration-12-and-over'
+        ],
         confirmation: 'p--confirmation',
         states: {
             'p-applicant-declaration': {
+                on: {
+                    ANSWER: [
+                        {
+                            target: 'p-mainapplicant-declaration-under-12'
+                        }
+                    ]
+                }
+            },
+            'p-mainapplicant-declaration-under-12': {
+                on: {
+                    ANSWER: [
+                        {
+                            target: 'p-mainapplicant-declaration-12-and-over'
+                        }
+                    ]
+                }
+            },
+            'p-mainapplicant-declaration-12-and-over': {
                 on: {
                     ANSWER: [
                         {
@@ -2193,7 +2247,7 @@ const validQTemplate = {
     answers: {},
     progress: ['p-applicant-declaration'],
     meta: {
-        questionnaireDocumentVersion: '3.0.0',
+        questionnaireDocumentVersion: '4.0.0',
         onComplete: {
             tasks: [
                 {
