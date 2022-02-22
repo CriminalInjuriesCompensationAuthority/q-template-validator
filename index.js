@@ -142,7 +142,14 @@ function createQuestionnaireTemplateHelper({
 
     // 2.3 - Does "summary" have a corresponding route
     function ensureSummaryRouteExists() {
-        return routeExists(routes.summary, '/routes/summary');
+        const results = routes.summary.map(stateId => routeExists(stateId, '/routes/summary'));
+        const errors = results.filter(result => result !== true);
+
+        if (errors.length > 0) {
+            return errors;
+        }
+
+        return true;
     }
 
     // 2.4 - Does "confirmation" have a corresponding route

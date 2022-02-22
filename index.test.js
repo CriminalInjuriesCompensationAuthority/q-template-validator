@@ -201,18 +201,21 @@ describe('q-helper', () => {
             const invalidTemplate = validTemplate;
 
             // Make the valid questionnaire invalid
-            delete invalidTemplate.routes.states['p--check-your-answers'];
+            delete invalidTemplate.routes.states['p-mainapplicant-declaration-under-12'];
 
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: invalidTemplate
             });
             const error = qHelper.ensureSummaryRouteExists();
 
-            expect(error).toEqual({
-                type: 'RouteNotFound',
-                source: '/routes/summary',
-                description: "Route '/routes/states/p--check-your-answers' not found"
-            });
+            expect(error).toEqual([
+                {
+                    type: 'RouteNotFound',
+                    source: '/routes/summary',
+                    description:
+                        "Route '/routes/states/p-mainapplicant-declaration-under-12' not found"
+                }
+            ]);
         });
     });
 
@@ -679,7 +682,7 @@ describe('q-helper', () => {
 
             // Make the valid questionnaire invalid
             invalidTemplate.routes.initial = 'p-foo';
-            invalidTemplate.routes.summary = 'p-bar';
+            invalidTemplate.routes.summary = ['p-bar'];
             invalidTemplate.routes.confirmation = 'p-baz';
             invalidTemplate.routes.states[
                 'p-applicant-british-citizen-or-eu-national'
