@@ -286,6 +286,91 @@ function createQuestionnaireTemplateHelper({
         return true;
     }
 
+    // 6 - do all sections have a theme
+
+    function ensureAllSectionsHaveThemes() {
+        const errors = Object.keys(sections).reduce((acc, sectionId) => {
+            if (sectionId !== 'system' && sectionId !== 'p--check-your-answers') {
+                const sectionSchema = sections[sectionId].schema;
+
+                // if schema includes allOf && allOf.meta
+                //      allOf > meta > classification > theme must exist
+                // ELSE
+                // if schema.properties && any properties have a 'type' key
+                //      property > meta > classification > theme must exist
+                // ELSE
+                // Error
+
+                if ('allOf' in sectionSchema) {
+                    sectionSchema.allOf.forEach(property => {
+                        if ('title' in property) {
+                            if (!('meta' in property)) {
+                                acc.push({
+                                    type: 'SectionSchemaFailed',
+                                    source: `/sections/${sectionId}/schema`,
+                                    description: 'Schema does not contain meta data'
+                                });
+                            } else if (!('classifications' in property.meta)) {
+                                acc.push({
+                                    type: 'SectionSchemaFailed',
+                                    source: `/sections/${sectionId}/schema`,
+                                    description: 'Schema does not contain classifications data'
+                                });
+                            } else if (!('theme' in property.meta.classifications)) {
+                                acc.push({
+                                    type: 'SectionSchemaFailed',
+                                    source: `/sections/${sectionId}/schema`,
+                                    description: 'Schema does not contain theme data'
+                                });
+                            }
+                        }
+                    });
+                }
+
+                if ('properties' in sectionSchema) {
+                    Object.keys(sectionSchema.properties).forEach(property => {
+                        if ('type' in sectionSchema.properties[property]) {
+                            if (!('meta' in sectionSchema.properties[property])) {
+                                acc.push({
+                                    type: 'SectionSchemaFailed',
+                                    source: `/sections/${sectionId}/schema`,
+                                    description: 'Schema does not contain meta data'
+                                });
+                            } else if (
+                                !('classifications' in sectionSchema.properties[property].meta)
+                            ) {
+                                acc.push({
+                                    type: 'SectionSchemaFailed',
+                                    source: `/sections/${sectionId}/schema`,
+                                    description: 'Schema does not contain classifications data'
+                                });
+                            } else if (
+                                !(
+                                    'theme' in
+                                    sectionSchema.properties[property].meta.classifications
+                                )
+                            ) {
+                                acc.push({
+                                    type: 'SectionSchemaFailed',
+                                    source: `/sections/${sectionId}/schema`,
+                                    description: 'Schema does not contain theme data'
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+
+            return acc;
+        }, []);
+
+        if (errors.length > 0) {
+            return errors;
+        }
+
+        return true;
+    }
+
     function validateTemplate() {
         const results = [isValidDocument()];
 
@@ -299,7 +384,8 @@ function createQuestionnaireTemplateHelper({
                 ensureConfirmationRouteExists(),
                 ensureRouteTargetsHaveCorrespondingState(),
                 ensureAllConditionDataReferencesHaveCorrespondingQuestion(),
-                ensureSectionSchemasAreValid()
+                ensureSectionSchemasAreValid(),
+                ensureAllSectionsHaveThemes()
             );
         }
 
@@ -381,7 +467,8 @@ function createQuestionnaireTemplateHelper({
         ensureAllRoutesCanBeReached,
         validateTemplate,
         removeSchemaElements,
-        isValidCompiledDocument
+        isValidCompiledDocument,
+        ensureAllSectionsHaveThemes
     });
 }
 
