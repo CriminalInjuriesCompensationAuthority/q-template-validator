@@ -288,8 +288,7 @@ describe('q-helper', () => {
                 },
                 {
                     type: 'TargetNotFound',
-                    source:
-                        '/routes/states/p-applicant-are-you-18-or-over/on/ANSWER/0/target',
+                    source: '/routes/states/p-applicant-are-you-18-or-over/on/ANSWER/0/target',
                     description: "Target '/routes/states/p--transition' not found"
                 },
                 {
@@ -654,6 +653,163 @@ describe('q-helper', () => {
         });
     });
 
+    describe('ensureAllSectionsHaveThemes', () => {
+        describe('Given an "simple" style schema', () => {
+            it('Should validate a section with correctly formatted theme data', () => {
+                const validTemplate = getValidQuestionnaireTemplate();
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: validTemplate,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
+                });
+
+                expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
+            });
+            it('Should error if a section does not have a meta property', () => {
+                const templateWithMissingMeta = getValidQuestionnaireTemplate();
+                delete templateWithMissingMeta.sections['p-applicant-are-you-18-or-over'].schema
+                    .properties['q-applicant-are-you-18-or-over'].meta;
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: templateWithMissingMeta,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
+                });
+                const error = qHelper.ensureAllSectionsHaveThemes();
+
+                expect(error).toEqual([
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: `/sections/p-applicant-are-you-18-or-over/schema`,
+                        description: 'Schema does not contain meta data'
+                    }
+                ]);
+            });
+            it('Should error if section.meta does not have a classifications property', () => {
+                const templateWithMissingClassifications = getValidQuestionnaireTemplate();
+                delete templateWithMissingClassifications.sections['p-applicant-are-you-18-or-over']
+                    .schema.properties['q-applicant-are-you-18-or-over'].meta.classifications;
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: templateWithMissingClassifications,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
+                });
+                const error = qHelper.ensureAllSectionsHaveThemes();
+
+                expect(error).toEqual([
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: `/sections/p-applicant-are-you-18-or-over/schema`,
+                        description: 'Schema does not contain classifications data'
+                    }
+                ]);
+            });
+            it('Should error if section.meta.classifications does not have a theme property', () => {
+                const templateWithMissingTheme = getValidQuestionnaireTemplate();
+                delete templateWithMissingTheme.sections['p-applicant-are-you-18-or-over'].schema
+                    .properties['q-applicant-are-you-18-or-over'].meta.classifications.theme;
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: templateWithMissingTheme,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
+                });
+                const error = qHelper.ensureAllSectionsHaveThemes();
+
+                expect(error).toEqual([
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: `/sections/p-applicant-are-you-18-or-over/schema`,
+                        description: 'Schema does not contain theme data'
+                    }
+                ]);
+            });
+        });
+        describe('Given a "compound" style schema', () => {
+            it('Should validate a section with correctly formatted theme data', () => {
+                const validTemplate = getValidQuestionnaireTemplate();
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: validTemplate,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
+                });
+
+                expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
+            });
+            it('Should error if a section does not have a meta property', () => {
+                const templateWithMissingMeta2 = getValidQuestionnaireTemplate();
+                delete templateWithMissingMeta2.sections['p-applicant-enter-your-name'].schema
+                    .allOf[0].meta;
+                console.log(
+                    JSON.stringify(
+                        templateWithMissingMeta2.sections['p-applicant-enter-your-name'].schema
+                            .allOf[0],
+                        null,
+                        4
+                    )
+                );
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: templateWithMissingMeta2,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
+                });
+                const error = qHelper.ensureAllSectionsHaveThemes();
+
+                expect(error).toEqual([
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: `/sections/p-applicant-enter-your-name/schema`,
+                        description: 'Schema does not contain meta data'
+                    }
+                ]);
+            });
+            it('Should error if section.meta does not have a classifications property', () => {
+                const templateWithMissingClassifications = getValidQuestionnaireTemplate();
+                delete templateWithMissingClassifications.sections['p-applicant-enter-your-name']
+                    .schema.allOf[0].meta.classifications;
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: templateWithMissingClassifications,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
+                });
+                const error = qHelper.ensureAllSectionsHaveThemes();
+
+                expect(error).toEqual([
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: `/sections/p-applicant-enter-your-name/schema`,
+                        description: 'Schema does not contain classifications data'
+                    }
+                ]);
+            });
+            it('Should error if section.meta.classifications does not have a theme property', () => {
+                const templateWithMissingTheme = getValidQuestionnaireTemplate();
+                delete templateWithMissingTheme.sections['p-applicant-enter-your-name'].schema
+                    .allOf[0].meta.classifications.theme;
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: templateWithMissingTheme,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
+                });
+                const error = qHelper.ensureAllSectionsHaveThemes();
+
+                expect(error).toEqual([
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: `/sections/p-applicant-enter-your-name/schema`,
+                        description: 'Schema does not contain theme data'
+                    }
+                ]);
+            });
+        });
+    });
+
     // TODO: reinstate these when https://github.com/CriminalInjuriesCompensationAuthority/q-template-validator/issues/11 is resolved
     // eslint-disable-next-line jest/no-commented-out-tests
     // describe('ensureAllRoutesCanBeReached', () => {
@@ -757,7 +913,12 @@ describe('q-helper', () => {
                 properties: {
                     'q-applicant-are-you-18-or-over': {
                         type: 'boolean',
-                        title: 'Are you 18 or over?'
+                        title: 'Are you 18 or over?',
+                        meta: {
+                            classifications: {
+                                theme: 'some-theme'
+                            }
+                        }
                     }
                 },
                 errorMessage: {
