@@ -1,5 +1,6 @@
 'use strict';
 
+const ajvFormatsMobileUk = require('ajv-formats-mobile-uk');
 const createQuestionnaireTemplateHelper = require('./index');
 const validQTemplate = require('./fixtures/valid-questionnaire-template');
 
@@ -13,13 +14,13 @@ describe('q-helper', () => {
 
         validTemplate.sections['p-applicant-enter-your-telephone-number'].schema.properties[
             'q-applicant-enter-your-telephone-number'
-        ].format = 'uk-mobile';
+        ].format = 'mobile-uk';
 
         const dummyFormatFunctionAlwaysPassesValidation = () => true;
         const qHelper = createQuestionnaireTemplateHelper({
             questionnaireTemplate: validTemplate,
             customSchemaFormats: {
-                'uk-mobile': dummyFormatFunctionAlwaysPassesValidation
+                'mobile-uk': dummyFormatFunctionAlwaysPassesValidation
             }
         });
 
@@ -133,7 +134,7 @@ describe('q-helper', () => {
 
             // Make the valid questionnaire invalid - remove some sections
             delete invalidTemplate.sections['p-applicant-declaration'];
-            delete invalidTemplate.sections['p-applicant-redirect-to-our-other-application'];
+            delete invalidTemplate.sections['p-applicant-british-citizen-or-eu-national'];
 
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: invalidTemplate
@@ -148,9 +149,9 @@ describe('q-helper', () => {
                 },
                 {
                     type: 'SectionNotFound',
-                    source: '/routes/states/p-applicant-redirect-to-our-other-application',
+                    source: '/routes/states/p-applicant-british-citizen-or-eu-national',
                     description:
-                        "Section '/sections/p-applicant-redirect-to-our-other-application' not found"
+                        "Section '/sections/p-applicant-british-citizen-or-eu-national' not found"
                 }
             ]);
         });
@@ -171,7 +172,7 @@ describe('q-helper', () => {
             const invalidTemplate = validTemplate;
 
             // Make the valid questionnaire invalid
-            delete invalidTemplate.routes.states['p-applicant-declaration'];
+            invalidTemplate.routes.states = [];
 
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: invalidTemplate
@@ -181,7 +182,7 @@ describe('q-helper', () => {
             expect(error).toEqual({
                 type: 'RouteNotFound',
                 source: '/routes/initial',
-                description: "Route '/routes/states/p-applicant-declaration' not found"
+                description: "Route '/routes/states/p-applicant-fatal-claim' not found"
             });
         });
     });
@@ -265,7 +266,7 @@ describe('q-helper', () => {
 
             // Make the valid questionnaire invalid - remove some states that are being referenced by targets
             delete invalidTemplate.routes.states['p-offender-enter-offenders-name'];
-            delete invalidTemplate.routes.states['p-applicant-redirect-to-our-other-application'];
+            delete invalidTemplate.routes.states['p--transition'];
 
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: invalidTemplate
@@ -283,42 +284,29 @@ describe('q-helper', () => {
                     type: 'TargetNotFound',
                     source:
                         '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/target',
-                    description:
-                        "Target '/routes/states/p-applicant-redirect-to-our-other-application' not found"
-                },
-                {
-                    type: 'TargetNotFound',
-                    source: '/routes/states/p-applicant-are-you-18-or-over/on/ANSWER/0/target',
-                    description:
-                        "Target '/routes/states/p-applicant-redirect-to-our-other-application' not found"
+                    description: "Target '/routes/states/p--transition' not found"
                 },
                 {
                     type: 'TargetNotFound',
                     source:
-                        '/routes/states/p-applicant-who-are-you-applying-for/on/ANSWER/0/target',
-                    description:
-                        "Target '/routes/states/p-applicant-redirect-to-our-other-application' not found"
-                },
-                {
-                    type: 'TargetNotFound',
-                    source:
-                        '/routes/states/p-applicant-were-you-a-victim-of-sexual-assault-or-abuse/on/ANSWER/0/target',
-                    description:
-                        "Target '/routes/states/p-applicant-redirect-to-our-other-application' not found"
-                },
-                {
-                    type: 'TargetNotFound',
-                    source:
-                        '/routes/states/p-applicant-select-the-option-that-applies-to-you/on/ANSWER/0/target',
-                    description:
-                        "Target '/routes/states/p-applicant-redirect-to-our-other-application' not found"
+                        '/routes/states/p-applicant-are-you-18-or-over/on/ANSWER/0/target',
+                    description: "Target '/routes/states/p--transition' not found"
                 },
                 {
                     type: 'TargetNotFound',
                     source:
                         '/routes/states/p-applicant-enter-your-date-of-birth/on/ANSWER/0/target',
-                    description:
-                        "Target '/routes/states/p-applicant-redirect-to-our-other-application' not found"
+                    description: "Target '/routes/states/p--transition' not found"
+                },
+                {
+                    type: 'TargetNotFound',
+                    source: '/routes/states/p-mainapplicant-parent/on/ANSWER/0/target',
+                    description: "Target '/routes/states/p--transition' not found"
+                },
+                {
+                    type: 'TargetNotFound',
+                    source: '/routes/states/p-applicant-fatal-claim/on/ANSWER/0/target',
+                    description: "Target '/routes/states/p--transition' not found"
                 }
             ]);
         });
@@ -367,7 +355,10 @@ describe('q-helper', () => {
             it('should return true if all section schemas are valid', () => {
                 const validTemplate = getValidQuestionnaireTemplate();
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: validTemplate
+                    questionnaireTemplate: validTemplate,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
                 });
 
                 expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
@@ -431,7 +422,10 @@ describe('q-helper', () => {
                 };
 
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: invalidTemplate
+                    questionnaireTemplate: invalidTemplate,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
                 });
                 const errors = qHelper.ensureSectionSchemasAreValid();
 
@@ -475,13 +469,13 @@ describe('q-helper', () => {
 
                 validTemplate.sections['p-applicant-enter-your-telephone-number'].schema.properties[
                     'q-applicant-enter-your-telephone-number'
-                ].format = 'uk-mobile';
+                ].format = 'mobile-uk';
 
                 const dummyFormatFunctionAlwaysFailsValidation = () => false;
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: validTemplate,
                     customSchemaFormats: {
-                        'uk-mobile': dummyFormatFunctionAlwaysFailsValidation
+                        'mobile-uk': dummyFormatFunctionAlwaysFailsValidation
                     }
                 });
                 const errors = qHelper.ensureSectionSchemasAreValid();
@@ -494,10 +488,63 @@ describe('q-helper', () => {
                             {
                                 dataPath: '/q-applicant-enter-your-telephone-number',
                                 keyword: 'format',
-                                message: 'should match format "uk-mobile"',
-                                params: {format: 'uk-mobile'},
+                                message: 'should match format "mobile-uk"',
+                                params: {format: 'mobile-uk'},
                                 schemaPath:
                                     '#/properties/q-applicant-enter-your-telephone-number/format'
+                            }
+                        ]
+                    },
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: '/sections/p-applicant-confirmation-method/schema',
+                        description: [
+                            {
+                                dataPath: '/q-applicant-enter-your-telephone-number',
+                                keyword: 'errorMessage',
+                                message:
+                                    'Enter a UK mobile phone number, like 07700 900 982 or +44 7700 900 982',
+                                params: {
+                                    errors: [
+                                        {
+                                            dataPath: '/q-applicant-enter-your-telephone-number',
+                                            keyword: 'format',
+                                            message: 'should match format "mobile-uk"',
+                                            params: {format: 'mobile-uk'},
+                                            schemaPath:
+                                                '#/properties/q-applicant-enter-your-telephone-number/format'
+                                        }
+                                    ]
+                                },
+                                schemaPath:
+                                    '#/properties/q-applicant-enter-your-telephone-number/errorMessage'
+                            }
+                        ]
+                    },
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: '/sections/p-mainapplicant-confirmation-method/schema',
+                        description: [
+                            {
+                                dataPath: '/q-mainapplicant-enter-your-telephone-number',
+                                keyword: 'errorMessage',
+                                message:
+                                    'Enter a UK mobile phone number, like 07700 900 982 or +44 7700 900 982',
+                                params: {
+                                    errors: [
+                                        {
+                                            dataPath:
+                                                '/q-mainapplicant-enter-your-telephone-number',
+                                            keyword: 'format',
+                                            message: 'should match format "mobile-uk"',
+                                            params: {format: 'mobile-uk'},
+                                            schemaPath:
+                                                '#/properties/q-mainapplicant-enter-your-telephone-number/format'
+                                        }
+                                    ]
+                                },
+                                schemaPath:
+                                    '#/properties/q-mainapplicant-enter-your-telephone-number/errorMessage'
                             }
                         ]
                     }
@@ -509,7 +556,10 @@ describe('q-helper', () => {
             it('should return true if all section schemas fail validation against their invalid examples', () => {
                 const validTemplate = getValidQuestionnaireTemplate();
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: validTemplate
+                    questionnaireTemplate: validTemplate,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
                 });
 
                 expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
@@ -573,7 +623,10 @@ describe('q-helper', () => {
                 };
 
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: invalidTemplate
+                    questionnaireTemplate: invalidTemplate,
+                    customSchemaFormats: {
+                        'mobile-uk': ajvFormatsMobileUk
+                    }
                 });
                 const errors = qHelper.ensureSectionSchemasAreValid();
 
@@ -641,7 +694,10 @@ describe('q-helper', () => {
         it('should return true if the questionnaire template is valid', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
+                customSchemaFormats: {
+                    'mobile-uk': ajvFormatsMobileUk
+                }
             });
 
             expect(qHelper.validateTemplate()).toEqual(true);
@@ -721,7 +777,10 @@ describe('q-helper', () => {
             };
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                customSchemaFormats: {
+                    'mobile-uk': ajvFormatsMobileUk
+                }
             });
             const errors = qHelper.validateTemplate();
 
