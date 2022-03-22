@@ -172,7 +172,7 @@ describe('q-helper', () => {
             const invalidTemplate = validTemplate;
 
             // Make the valid questionnaire invalid
-            invalidTemplate.routes.states = [];
+            delete invalidTemplate.routes.states['p-applicant-fatal-claim'];
 
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: invalidTemplate
