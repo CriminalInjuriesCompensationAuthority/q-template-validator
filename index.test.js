@@ -743,14 +743,6 @@ describe('q-helper', () => {
                 const templateWithMissingMeta2 = getValidQuestionnaireTemplate();
                 delete templateWithMissingMeta2.sections['p-applicant-enter-your-name'].schema
                     .allOf[0].meta;
-                console.log(
-                    JSON.stringify(
-                        templateWithMissingMeta2.sections['p-applicant-enter-your-name'].schema
-                            .allOf[0],
-                        null,
-                        4
-                    )
-                );
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: templateWithMissingMeta2,
                     customSchemaFormats: {

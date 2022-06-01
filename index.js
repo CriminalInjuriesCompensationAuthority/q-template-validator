@@ -409,6 +409,7 @@ function createQuestionnaireTemplateHelper({
         }, []);
 
         if (errors.length > 0) {
+            // eslint-disable-next-line no-console
             console.log(JSON.stringify(errors, null, 4));
 
             return errors;
