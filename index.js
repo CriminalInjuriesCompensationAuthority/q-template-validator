@@ -7,6 +7,7 @@ defaults.qSchema = require('q-schema');
 defaults.createQPathsInstance = require('./q-paths-helper');
 defaults._.has = require('lodash.has');
 defaults._.get = require('lodash.get');
+defaults.convertJsonExpressionsToString = require('./utils/convertJsonExpressionsToString');
 
 function createQuestionnaireTemplateHelper({
     Ajv = defaults.Ajv,
@@ -15,7 +16,8 @@ function createQuestionnaireTemplateHelper({
     createQPathsInstance = defaults.createQPathsInstance,
     _ = defaults._,
     questionnaireTemplate,
-    customSchemaFormats = {}
+    customSchemaFormats = {},
+    convertJsonExpressionsToString = defaults.convertJsonExpressionsToString
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
@@ -225,7 +227,8 @@ function createQuestionnaireTemplateHelper({
             const sectionSchema = sections[sectionId].schema;
             const validExamples = _.get(sectionSchema, 'examples');
             const invalidExamples = _.get(sectionSchema, 'invalidExamples');
-            const validate = ajv.compile(sectionSchema);
+            const preProcessedSectionSchema = convertJsonExpressionsToString(sectionSchema);
+            const validate = ajv.compile(preProcessedSectionSchema);
 
             // for each valid example ensure there are no errors
             if (validExamples) {
