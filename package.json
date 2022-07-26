@@ -36,6 +36,6 @@
         "lodash.get": "^4.4.2",
         "lodash.has": "^4.5.2",
         "q-router": "github:CriminalInjuriesCompensationAuthority/q-router#v3.0.0",
-        "q-schema": "github:CriminalInjuriesCompensationAuthority/q-schema#v4.1.1"
+        "q-schema": "github:CriminalInjuriesCompensationAuthority/q-schema#v5.0.0"
     }
 }
