@@ -3,7 +3,7 @@
 const defaults = {_: {}};
 defaults.Ajv = require('ajv');
 defaults.AjvErrors = require('ajv-errors');
-defaults.qSchema = require('q-schema');
+defaults.qSchema = require('./utils/q-schema');
 defaults.createQPathsInstance = require('./q-paths-helper');
 defaults._.has = require('lodash.has');
 defaults._.get = require('lodash.get');
@@ -472,7 +472,8 @@ function createQuestionnaireTemplateHelper({
         validateTemplate,
         removeSchemaElements,
         isValidCompiledDocument,
-        ensureAllSectionsHaveThemes
+        ensureAllSectionsHaveThemes,
+        schema: JSON.parse(JSON.stringify(qSchema)) // qSchema
     });
 }
 

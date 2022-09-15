@@ -3,12 +3,13 @@
 const ajvFormatsMobileUk = require('ajv-formats-mobile-uk');
 const createQuestionnaireTemplateHelper = require('./index');
 const validQTemplate = require('./fixtures/valid-questionnaire-template');
+const schema = require('./utils/q-schema');
 
 function getValidQuestionnaireTemplate() {
     return JSON.parse(JSON.stringify(validQTemplate));
 }
 
-describe('q-helper', () => {
+describe('q-template-validator', () => {
     it('should accept custom format functions for ajv', () => {
         const validTemplate = getValidQuestionnaireTemplate();
 
@@ -1274,5 +1275,30 @@ describe('q-helper', () => {
                 });
             });
         });
+    });
+
+    it('should export the questionnaire schema', () => {
+        const validTemplate = getValidQuestionnaireTemplate();
+        const templateValidator = createQuestionnaireTemplateHelper({
+            questionnaireTemplate: validTemplate
+        });
+
+        expect(templateValidator.schema).toEqual(schema);
+    });
+
+    it('should export a copy of the questionnaire schema', () => {
+        const validTemplate = getValidQuestionnaireTemplate();
+        const templateValidator1 = createQuestionnaireTemplateHelper({
+            questionnaireTemplate: validTemplate
+        });
+        const templateValidator2 = createQuestionnaireTemplateHelper({
+            questionnaireTemplate: validTemplate
+        });
+        const schema1 = templateValidator1.schema;
+        const schema2 = templateValidator2.schema;
+
+        schema1.title = 'foo';
+
+        expect(schema1).not.toEqual(schema2);
     });
 });
