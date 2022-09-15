@@ -10271,7 +10271,7 @@ const validQTemplate = {
         }
     },
     meta: {
-        questionnaireDocumentVersion: '4.1.0',
+        questionnaireDocumentVersion: '4.2.0',
         onComplete: {
             tasks: {
                 sendEmail: {

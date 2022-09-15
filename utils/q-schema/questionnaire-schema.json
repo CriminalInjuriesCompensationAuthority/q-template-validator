@@ -19,7 +19,7 @@
             "required": ["questionnaireDocumentVersion"],
             "properties": {
                 "questionnaireDocumentVersion": {
-                    "enum": ["4.1.0"]
+                    "enum": ["4.2.0"]
                 }
             }
         },
@@ -147,8 +147,14 @@
                                     "required": ["title"],
                                     "properties": {
                                         "title": {
-                                            "type": "string",
-                                            "pattern": "^[\\w\\S\\s]{1,60}$"
+                                            "anyOf": [
+                                                {
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "$ref": "#/definitions/jsonExpressionL10nt"
+                                                }
+                                            ]
                                         }
                                     }
                                 }
@@ -296,6 +302,16 @@
                     "minItems": 1
                 }
             }
+        },
+        "jsonExpressionL10nt": {
+            "type": "array",
+            "minItems": 2,
+            "items": [
+                {
+                    "type": "string",
+                    "pattern": "^\\|l10nt$"
+                }
+            ]
         }
     }
 }

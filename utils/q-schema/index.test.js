@@ -2,8 +2,20 @@
 
 const Ajv = require('ajv');
 const questionnaireSchema = require('./index');
-const validQuestionnaireTemplate = require('./fixtures/valid-questionnaire-template.json');
-const invalidQuestionnaireTemplate = require('./fixtures/invalid-questionnaire-template-missing-essential-attributes');
+const validQuestionnaireTemplateFixture = require('./fixtures/valid-questionnaire-template.json');
+const invalidQuestionnaireTemplateFixture = require('./fixtures/invalid-questionnaire-template-missing-essential-attributes');
+
+function copyJsonObject(objectDerivedFromJson) {
+    return JSON.parse(JSON.stringify(objectDerivedFromJson));
+}
+
+function getValidQuestionnaireTemplate() {
+    return copyJsonObject(validQuestionnaireTemplateFixture);
+}
+
+function getInvalidQuestionnaireTemplate() {
+    return copyJsonObject(invalidQuestionnaireTemplateFixture);
+}
 
 const ajv = new Ajv({
     allErrors: true,
@@ -15,12 +27,14 @@ const ajv = new Ajv({
 describe('Questionnaire Schema', () => {
     it('should return true for a valid questionnaire document structure', () => {
         const validate = ajv.compile(questionnaireSchema);
+        const validQuestionnaireTemplate = getValidQuestionnaireTemplate();
         const valid = validate(validQuestionnaireTemplate);
         expect(valid).toEqual(true);
     });
 
     it('should return errors for an invalid questionnaire document structure', () => {
         const validate = ajv.compile(questionnaireSchema);
+        const invalidQuestionnaireTemplate = getInvalidQuestionnaireTemplate();
         const valid = validate(invalidQuestionnaireTemplate);
 
         expect(valid).toEqual(false);
@@ -54,5 +68,53 @@ describe('Questionnaire Schema', () => {
                 schemaPath: '#/additionalProperties'
             }
         ]);
+    });
+
+    describe('taxonomies', () => {
+        describe('taxon', () => {
+            it('should allow the title to be a string', () => {
+                const validQuestionnaireTemplate = getValidQuestionnaireTemplate();
+
+                validQuestionnaireTemplate.taxonomies = {
+                    'some-taxonomy-name': {
+                        taxa: {
+                            'some-taxon-name': {
+                                title: 'Taxon 1'
+                            },
+                            'some-other-taxon-name': {
+                                title: 'Taxon 2'
+                            }
+                        }
+                    }
+                };
+
+                const validate = ajv.compile(questionnaireSchema);
+                const valid = validate(validQuestionnaireTemplate);
+
+                expect(valid).toEqual(true);
+            });
+
+            it('should allow the title to be an l10nt JSON expression', () => {
+                const validQuestionnaireTemplate = getValidQuestionnaireTemplate();
+
+                validQuestionnaireTemplate.taxonomies = {
+                    'some-taxonomy-name': {
+                        taxa: {
+                            'some-taxon-name': {
+                                title: 'Taxon 1'
+                            },
+                            'some-other-taxon-name': {
+                                title: ['|l10nt', 'some.translation.id']
+                            }
+                        }
+                    }
+                };
+
+                const validate = ajv.compile(questionnaireSchema);
+                const valid = validate(validQuestionnaireTemplate);
+
+                expect(valid).toEqual(true);
+            });
+        });
     });
 });
