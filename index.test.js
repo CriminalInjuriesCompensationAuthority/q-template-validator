@@ -348,6 +348,71 @@ describe('q-template-validator', () => {
                 }
             ]);
         });
+
+        describe('Nested JSON Expressions', () => {
+            it('should return true if all condition data references have a corresponding question', () => {
+                const validTemplate = getValidQuestionnaireTemplate();
+                const nestedJsonExpression = [
+                    'and',
+                    [
+                        '==',
+                        '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
+                        false
+                    ],
+                    [
+                        '==',
+                        '$.answers.p-applicant-who-are-you-applying-for.q-applicant-who-are-you-applying-for',
+                        'someone-else'
+                    ]
+                ];
+
+                validTemplate.routes.states[
+                    'p-applicant-british-citizen-or-eu-national'
+                ].on.ANSWER[0].cond = nestedJsonExpression;
+
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: validTemplate
+                });
+
+                expect(qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion()).toEqual(
+                    true
+                );
+            });
+
+            it('should return an error if one or more condition data references have no corresponding question', () => {
+                const validTemplate = getValidQuestionnaireTemplate();
+                const invalidTemplate = validTemplate;
+                const nestedJsonExpression = [
+                    'and',
+                    [
+                        '==',
+                        '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
+                        false
+                    ],
+                    ['==', '$.answers.p-does-not-exist.q-does-not-exist', 'someone-else']
+                ];
+
+                // Make the valid questionnaire invalid
+                invalidTemplate.routes.states[
+                    'p-applicant-british-citizen-or-eu-national'
+                ].on.ANSWER[0].cond = nestedJsonExpression;
+
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: invalidTemplate
+                });
+                const error = qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion();
+
+                expect(error).toIncludeSameMembers([
+                    {
+                        type: 'ConditionDataReferenceNotFound',
+                        source:
+                            '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond',
+                        description:
+                            "Condition data reference '/sections/p-does-not-exist/schema/properties/q-does-not-exist' not found"
+                    }
+                ]);
+            });
+        });
     });
 
     describe('ensureSectionSchemasAreValid', () => {

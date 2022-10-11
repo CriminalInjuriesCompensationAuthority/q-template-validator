@@ -8,6 +8,7 @@ defaults.createQPathsInstance = require('./q-paths-helper');
 defaults._.has = require('lodash.has');
 defaults._.get = require('lodash.get');
 defaults.convertJsonExpressionsToString = require('./utils/convertJsonExpressionsToString');
+defaults.getDataRefsFromJsonExpression = require('./utils/getDataRefsFromJsonExpression');
 
 function createQuestionnaireTemplateHelper({
     Ajv = defaults.Ajv,
@@ -17,7 +18,8 @@ function createQuestionnaireTemplateHelper({
     _ = defaults._,
     questionnaireTemplate,
     customSchemaFormats = {},
-    convertJsonExpressionsToString = defaults.convertJsonExpressionsToString
+    convertJsonExpressionsToString = defaults.convertJsonExpressionsToString,
+    getDataRefsFromJsonExpression = defaults.getDataRefsFromJsonExpression
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
@@ -61,10 +63,6 @@ function createQuestionnaireTemplateHelper({
         }
 
         return [];
-    }
-
-    function isDataReference(element) {
-        return typeof element === 'string' && element.startsWith('$.');
     }
 
     function routeExists(stateId, sourcePath) {
@@ -192,21 +190,22 @@ function createQuestionnaireTemplateHelper({
             const conditions = getAllConditions(state);
 
             conditions.forEach(condition => {
-                condition.elements.forEach(element => {
-                    if (isDataReference(element)) {
-                        const dataReferenceParts = element.split('.');
-                        const dataReference = `${dataReferenceParts[2]}.schema.properties.${dataReferenceParts[3]}`;
+                const jsonExpression = condition.elements;
+                const dataRefs = getDataRefsFromJsonExpression(jsonExpression);
 
-                        if (_.has(sections, dataReference) === false) {
-                            acc.push({
-                                type: 'ConditionDataReferenceNotFound',
-                                source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond`,
-                                description: `Condition data reference '/sections/${dataReference.replace(
-                                    /\./g,
-                                    '/'
-                                )}' not found`
-                            });
-                        }
+                dataRefs.forEach(dataRef => {
+                    const dataReferenceParts = dataRef.split('.');
+                    const dataReference = `${dataReferenceParts[2]}.schema.properties.${dataReferenceParts[3]}`;
+
+                    if (_.has(sections, dataReference) === false) {
+                        acc.push({
+                            type: 'ConditionDataReferenceNotFound',
+                            source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond`,
+                            description: `Condition data reference '/sections/${dataReference.replace(
+                                /\./g,
+                                '/'
+                            )}' not found`
+                        });
                     }
                 });
             });
