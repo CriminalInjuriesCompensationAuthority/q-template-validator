@@ -192,7 +192,7 @@ function createQuestionnaireTemplateHelper({
             const conditions = getAllConditions(state);
 
             conditions.forEach(condition => {
-                condition.elements.forEach((element, elementIndex) => {
+                condition.elements.forEach(element => {
                     if (isDataReference(element)) {
                         const dataReferenceParts = element.split('.');
                         const dataReference = `${dataReferenceParts[2]}.schema.properties.${dataReferenceParts[3]}`;
@@ -200,7 +200,7 @@ function createQuestionnaireTemplateHelper({
                         if (_.has(sections, dataReference) === false) {
                             acc.push({
                                 type: 'ConditionDataReferenceNotFound',
-                                source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond/${elementIndex}`,
+                                source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond`,
                                 description: `Condition data reference '/sections/${dataReference.replace(
                                     /\./g,
                                     '/'

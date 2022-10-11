@@ -342,7 +342,7 @@ describe('q-template-validator', () => {
                 {
                     type: 'ConditionDataReferenceNotFound',
                     source:
-                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond/1',
+                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond',
                     description:
                         "Condition data reference '/sections/p-foo/schema/properties/q-baz' not found"
                 }
@@ -995,7 +995,7 @@ describe('q-template-validator', () => {
                 {
                     type: 'ConditionDataReferenceNotFound',
                     source:
-                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond/1',
+                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond',
                     description:
                         "Condition data reference '/sections/p-foo/schema/properties/q-baz' not found"
                 }
