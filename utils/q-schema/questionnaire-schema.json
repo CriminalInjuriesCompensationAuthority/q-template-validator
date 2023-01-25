@@ -33,7 +33,7 @@
         "sections": {
             "type": "object",
             "patternProperties": {
-                "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system)$": {
+                "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner)$": {
                     "type": "object",
                     "required": ["schema"],
                     "additionalProperties": false,
@@ -75,7 +75,7 @@
                     "type": "object",
                     "additionalProperties": false,
                     "patternProperties": {
-                        "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system)$": {
+                        "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner)$": {
                             "type": "object",
                             "oneOf": [
                                 {
@@ -193,7 +193,7 @@
     "definitions": {
         "pageId": {
             "type": "string",
-            "pattern": "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system)$"
+            "pattern": "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner)$"
         },
         "questionId": {
             "type": "string",
