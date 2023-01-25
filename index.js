@@ -292,7 +292,7 @@ function createQuestionnaireTemplateHelper({
 
     function ensureAllSectionsHaveThemes() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
-            if (sectionId !== 'system' && sectionId !== 'p--check-your-answers') {
+            if (['system', 'p--check-your-answers', 'user'].includes(sectionId) === false) {
                 const sectionSchema = sections[sectionId].schema;
 
                 // if schema includes allOf && allOf.meta

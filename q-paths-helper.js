@@ -8,7 +8,7 @@ defaults.createQuestionnaireRouter = require('q-router');
 function createQuestionnairePathsHelper({
     _ = defaults._,
     createQuestionnaireRouter = defaults.createQuestionnaireRouter,
-    ignoreStates = ['system']
+    ignoreStates = ['system', 'user']
 } = {}) {
     function isUsedForRouting(sectionId, states) {
         let isRoutingQuestion = false;
