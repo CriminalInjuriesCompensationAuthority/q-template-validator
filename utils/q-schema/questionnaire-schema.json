@@ -51,15 +51,10 @@
         },
         "routes": {
             "type": "object",
-            "required": ["initial", "referrer", "summary", "confirmation", "states"],
+            "required": ["initial", "summary", "confirmation", "states"],
             "properties": {
                 "initial": {
                     "$ref": "#/definitions/pageId"
-                },
-                "referrer": {
-                    "type": "string",
-                    "format": "uri",
-                    "pattern": "^https://"
                 },
                 "summary": {
                     "type": "array",
