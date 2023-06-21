@@ -1,6 +1,6 @@
 {
     "name": "q-template-validator",
-    "version": "6.0.0",
+    "version": "6.0.1",
     "description": "Ensure questionnaire templates are valid",
     "main": "index.js",
     "engines": {
