@@ -307,11 +307,27 @@ function createQuestionnaireTemplateHelper({
                     sectionSchema.allOf.forEach(property => {
                         if ('title' in property) {
                             if (!('meta' in property)) {
-                                acc.push({
-                                    type: 'SectionSchemaFailed',
-                                    source: `/sections/${sectionId}/schema`,
-                                    description: 'Schema does not contain meta data'
-                                });
+                                if ('allOf' in property) {
+                                    const metaExists = property.allOf.reduce((valid, prop) => {
+                                        return (
+                                            prop.properties[Object.keys(prop.properties)[0]] &&
+                                            valid
+                                        );
+                                    }, true);
+                                    if (!metaExists) {
+                                        acc.push({
+                                            type: 'SectionSchemaFailed',
+                                            source: `/sections/${sectionId}/schema`,
+                                            description: 'Schema does not contain meta data'
+                                        });
+                                    }
+                                } else {
+                                    acc.push({
+                                        type: 'SectionSchemaFailed',
+                                        source: `/sections/${sectionId}/schema`,
+                                        description: 'Schema does not contain meta data'
+                                    });
+                                }
                             } else if (!('classifications' in property.meta)) {
                                 acc.push({
                                     type: 'SectionSchemaFailed',
