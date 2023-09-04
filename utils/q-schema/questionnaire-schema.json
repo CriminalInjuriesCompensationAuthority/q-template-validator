@@ -8,6 +8,7 @@
         "sections",
         "routes",
         "answers",
+        "onSubmit",
         "progress",
         "meta",
         "taxonomies"
@@ -123,6 +124,9 @@
             }
         },
         "answers": {
+            "type": "object"
+        },
+        "onSubmit": {
             "type": "object"
         },
         "progress": {
