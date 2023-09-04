@@ -20,7 +20,7 @@
             "required": ["questionnaireDocumentVersion"],
             "properties": {
                 "questionnaireDocumentVersion": {
-                    "enum": ["4.2.0"]
+                    "enum": ["5.0.0"]
                 }
             }
         },
