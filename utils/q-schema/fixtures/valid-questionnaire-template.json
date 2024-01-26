@@ -1533,6 +1533,27 @@
                 "invalidExamples": [{}]
             }
         },
+        "origin": {
+            "schema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "required": ["channel"],
+                "properties": {
+                    "channel": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9]{0,19}(?:-[a-z0-9]{1,20}){0,20}$",
+                        "errorMessage": {
+                            "pattern": {
+                                "channel": "Channel is not a valid format"
+                            }
+                        }
+                    }
+                },
+                "errorMessage": {"required": "Channel is required"},
+                "examples": [{"channel": "dashboard"}],
+                "invalidExamples": [{}]
+            }
+        },
         "p--no-l10n-context": {
             "l10n": {
                 "vars": {
@@ -2118,7 +2139,8 @@
             "p-applicant-you-cannot-get-compensation": {
                 "on": {"ANSWER": [{"target": "p-applicant-did-the-crime-happen-once-or-over-time"}]}
             },
-            "system": {"type": "final"}
+            "system": {"type": "final"},
+            "origin": {"type": "final"}
         }
     },
     "answers": {},
