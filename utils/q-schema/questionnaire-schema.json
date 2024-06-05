@@ -1,256 +1,263 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "title": "Questionnaire template schema",
-    "required": [
-        "type",
-        "version",
-        "sections",
-        "routes",
-        "answers",
-        "onSubmit",
-        "progress",
-        "meta",
-        "taxonomies"
-    ],
-    "additionalProperties": false,
-    "properties": {
-        "meta": {
+    "description": "Questionnaire Template Schemas",
+    "oneOf": [
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
-            "required": ["questionnaireDocumentVersion"],
+            "title": "Questionnaire template schema",
+            "required": [
+                "type",
+                "version",
+                "sections",
+                "routes",
+                "answers",
+                "onSubmit",
+                "progress",
+                "meta",
+                "taxonomies"
+            ],
+            "additionalProperties": false,
             "properties": {
-                "questionnaireDocumentVersion": {
-                    "enum": ["5.0.0"]
-                }
-            }
-        },
-        "type": {
-            "type": "string",
-            "pattern": "^[a-z]{1,20}(?:-[a-z]{1,20}){0,10}$"
-        },
-        "version": {
-            "$ref": "#/definitions/semver"
-        },
-        "sections": {
-            "type": "object",
-            "patternProperties": {
-                "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
+                "meta": {
                     "type": "object",
-                    "required": ["schema"],
-                    "additionalProperties": false,
+                    "required": ["questionnaireDocumentVersion"],
                     "properties": {
-                        "schema": {
-                            "$ref": "#/definitions/attributes"
-                        },
-                        "l10n": {
-                            "$ref": "#/definitions/l10n"
+                        "questionnaireDocumentVersion": {
+                            "enum": ["5.0.0"]
                         }
                     }
-                }
-            },
-            "additionalProperties": false
-        },
-        "routes": {
-            "type": "object",
-            "required": ["initial", "referrer", "summary", "confirmation", "states"],
-            "properties": {
-                "initial": {
-                    "$ref": "#/definitions/pageId"
                 },
-                "referrer": {
+                "type": {
                     "type": "string",
-                    "format": "uri",
-                    "pattern": "^https://"
+                    "pattern": "^[a-z]{1,20}(?:-[a-z]{1,20}){0,10}$"
                 },
-                "summary": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "$ref": "#/definitions/pageId"
-                    }
+                "version": {
+                    "$ref": "#/oneOf/0/definitions/semver"
                 },
-                "confirmation": {
-                    "$ref": "#/definitions/pageId"
-                },
-                "states": {
+                "sections": {
                     "type": "object",
-                    "additionalProperties": false,
                     "patternProperties": {
                         "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
                             "type": "object",
-                            "oneOf": [
-                                {
-                                    "additionalProperties": false,
-                                    "required": ["type"],
-                                    "properties": {
-                                        "type": {
-                                            "const": "final"
-                                        }
-                                    }
+                            "required": ["schema"],
+                            "additionalProperties": false,
+                            "properties": {
+                                "schema": {
+                                    "$ref": "#/oneOf/0/definitions/attributes"
                                 },
-                                {
-                                    "additionalProperties": false,
-                                    "required": ["on"],
-                                    "properties": {
-                                        "on": {
-                                            "type": "object",
-                                            "required": ["ANSWER"],
+                                "l10n": {
+                                    "$ref": "#/oneOf/0/definitions/l10n"
+                                }
+                            }
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "routes": {
+                    "type": "object",
+                    "required": ["initial", "referrer", "summary", "confirmation", "states"],
+                    "properties": {
+                        "initial": {
+                            "$ref": "#/oneOf/0/definitions/pageId"
+                        },
+                        "referrer": {
+                            "type": "string",
+                            "format": "uri",
+                            "pattern": "^https://"
+                        },
+                        "summary": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/oneOf/0/definitions/pageId"
+                            }
+                        },
+                        "confirmation": {
+                            "$ref": "#/oneOf/0/definitions/pageId"
+                        },
+                        "states": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "patternProperties": {
+                                "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
+                                    "type": "object",
+                                    "oneOf": [
+                                        {
+                                            "additionalProperties": false,
+                                            "required": ["type"],
                                             "properties": {
-                                                "ANSWER": {
-                                                    "type": "array",
-                                                    "minItems": 1,
-                                                    "items": {
-                                                        "type": "object",
-                                                        "required": ["target"],
-                                                        "properties": {
-                                                            "target": {
-                                                                "$ref": "#/definitions/pageId"
-                                                            },
-                                                            "cond": {
-                                                                "type": "array",
-                                                                "minItems": 1
+                                                "type": {
+                                                    "const": "final"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "additionalProperties": false,
+                                            "required": ["on"],
+                                            "properties": {
+                                                "on": {
+                                                    "type": "object",
+                                                    "required": ["ANSWER"],
+                                                    "properties": {
+                                                        "ANSWER": {
+                                                            "type": "array",
+                                                            "minItems": 1,
+                                                            "items": {
+                                                                "type": "object",
+                                                                "required": ["target"],
+                                                                "properties": {
+                                                                    "target": {
+                                                                        "$ref": "#/oneOf/0/definitions/pageId"
+                                                                    },
+                                                                    "cond": {
+                                                                        "type": "array",
+                                                                        "minItems": 1
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
                                         }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "answers": {
-            "type": "object"
-        },
-        "onSubmit": {
-            "type": "object"
-        },
-        "progress": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-                "$ref": "#/definitions/pageId"
-            }
-        },
-        "taxonomies": {
-            "type": "object",
-            "patternProperties": {
-                "^[a-zA-Z0-9-]{1,30}$": {
-                    "type": "object",
-                    "required": ["taxa"],
-                    "properties": {
-                        "taxa": {
-                            "type": "object",
-                            "patternProperties": {
-                                "^[a-zA-Z0-9-]{1,30}$": {
-                                    "type": "object",
-                                    "required": ["title"],
-                                    "properties": {
-                                        "title": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "string"
-                                                },
-                                                {
-                                                    "$ref": "#/definitions/jsonExpressionL10nt"
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "l10n": {
-                            "$ref": "#/definitions/l10n"
-                        }
-                    }
-                }
-            }
-        },
-        "attributes": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-                "q__roles": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "patternProperties": {
-                        "^(?:[a-z]{1,20}(?:(-|[A-Z])[a-z0-9]{1,20}){0,20})$": {
-                            "type": "object",
-                            "required": ["schema"],
-                            "additionalProperties": false,
-                            "properties": {
-                                "schema": {
-                                    "$ref": "#/definitions/roleAttributes"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "pageId": {
-            "type": "string",
-            "pattern": "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$"
-        },
-        "questionId": {
-            "type": "string",
-            "pattern": "^q(?:-[a-z0-9]{1,20}){1,20}$"
-        },
-        "semver": {
-            "type": "string",
-            "pattern": "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$"
-        },
-        "l10n": {
-            "type": "object",
-            "required": ["vars", "translations"],
-            "properties": {
-                "vars": {
-                    "type": "object",
-                    "required": ["lng", "ns"],
-                    "properties": {
-                        "lng": {
-                            "type": "string"
-                        },
-                        "ns": {
-                            "type": "string"
-                        },
-                        "context": {
-                            "type": "object",
-                            "required": ["$data"],
-                            "properties": {
-                                "$data": {
-                                    "type": "string"
+                                    ]
                                 }
                             }
                         }
                     }
                 },
-                "translations": {
+                "answers": {
+                    "type": "object"
+                },
+                "onSubmit": {
+                    "type": "object"
+                },
+                "progress": {
                     "type": "array",
+                    "minItems": 1,
                     "items": {
-                        "required": ["language", "namespace", "resources"],
-                        "properties": {
-                            "language": {
-                                "type": "string"
-                            },
-                            "namespace": {
-                                "type": "string"
-                            },
-                            "resources": {
-                                "type": "object",
-                                "patternProperties": {
-                                    "^[a-zA-Z0-9-_]{1,30}$": {
-                                        "type": ["string", "object"],
+                        "$ref": "#/oneOf/0/definitions/pageId"
+                    }
+                },
+                "taxonomies": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9-]{1,30}$": {
+                            "type": "object",
+                            "required": ["taxa"],
+                            "properties": {
+                                "taxa": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^[a-zA-Z0-9-]{1,30}$": {
+                                            "type": "object",
+                                            "required": ["title"],
+                                            "properties": {
+                                                "title": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "$ref": "#/oneOf/0/definitions/jsonExpressionL10nt"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "l10n": {
+                                    "$ref": "#/oneOf/0/definitions/l10n"
+                                }
+                            }
+                        }
+                    }
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "q__roles": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "patternProperties": {
+                                "^(?:[a-z]{1,20}(?:(-|[A-Z])[a-z0-9]{1,20}){0,20})$": {
+                                    "type": "object",
+                                    "required": ["schema"],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "schema": {
+                                            "$ref": "#/oneOf/0/definitions/roleAttributes"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "definitions": {
+                "pageId": {
+                    "type": "string",
+                    "pattern": "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$"
+                },
+                "questionId": {
+                    "type": "string",
+                    "pattern": "^q(?:-[a-z0-9]{1,20}){1,20}$"
+                },
+                "semver": {
+                    "type": "string",
+                    "pattern": "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$"
+                },
+                "l10n": {
+                    "type": "object",
+                    "required": ["vars", "translations"],
+                    "properties": {
+                        "vars": {
+                            "type": "object",
+                            "required": ["lng", "ns"],
+                            "properties": {
+                                "lng": {
+                                    "type": "string"
+                                },
+                                "ns": {
+                                    "type": "string"
+                                },
+                                "context": {
+                                    "type": "object",
+                                    "required": ["$data"],
+                                    "properties": {
+                                        "$data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "translations": {
+                            "type": "array",
+                            "items": {
+                                "required": ["language", "namespace", "resources"],
+                                "properties": {
+                                    "language": {
+                                        "type": "string"
+                                    },
+                                    "namespace": {
+                                        "type": "string"
+                                    },
+                                    "resources": {
+                                        "type": "object",
                                         "patternProperties": {
-                                            "^[a-zA-Z-_]{1,30}$": {
-                                                "type": ["string", "object"]
+                                            "^[a-zA-Z0-9-_]{1,30}$": {
+                                                "type": ["string", "object"],
+                                                "patternProperties": {
+                                                    "^[a-zA-Z-_]{1,30}$": {
+                                                        "type": ["string", "object"]
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -258,64 +265,405 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "attributes": {
-            "type": "object",
-            "required": ["$schema", "examples", "invalidExamples"],
-            "properties": {
-                "$schema": {
-                    "const": "http://json-schema.org/draft-07/schema#"
                 },
-                "examples": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "object",
-                        "patternProperties": {
-                            "^q(?:-[a-z0-9]{1,20}){1,20}$": {}
+                "attributes": {
+                    "type": "object",
+                    "required": ["$schema", "examples", "invalidExamples"],
+                    "properties": {
+                        "$schema": {
+                            "const": "http://json-schema.org/draft-07/schema#"
+                        },
+                        "examples": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "patternProperties": {
+                                    "^q(?:-[a-z0-9]{1,20}){1,20}$": {}
+                                }
+                            }
+                        },
+                        "invalidExamples": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "patternProperties": {
+                                    "^q(?:-[a-z0-9]{1,20}){1,20}$": {}
+                                }
+                            }
                         }
                     }
                 },
-                "invalidExamples": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "object",
-                        "patternProperties": {
-                            "^q(?:-[a-z0-9]{1,20}){1,20}$": {}
+                "roleAttributes": {
+                    "type": "object",
+                    "required": ["$schema", "examples", "invalidExamples"],
+                    "properties": {
+                        "$schema": {
+                            "const": "http://json-schema.org/draft-07/schema#"
+                        },
+                        "examples": {
+                            "type": "array",
+                            "minItems": 1
+                        },
+                        "invalidExamples": {
+                            "type": "array",
+                            "minItems": 1
                         }
                     }
+                },
+                "jsonExpressionL10nt": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\|l10nt$"
+                        }
+                    ]
                 }
             }
         },
-        "roleAttributes": {
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
-            "required": ["$schema", "examples", "invalidExamples"],
+            "title": "Questionnaire template schema with a task list hierarchy",
+            "required": [
+                "type",
+                "version",
+                "sections",
+                "routes",
+                "answers",
+                "taskStatuses",
+                "meta",
+                "taxonomies",
+                "attributes"
+            ],
+            "additionalProperties": false,
             "properties": {
-                "$schema": {
-                    "const": "http://json-schema.org/draft-07/schema#"
+                "meta": {
+                    "type": "object",
+                    "required": ["questionnaireDocumentVersion"],
+                    "properties": {
+                        "questionnaireDocumentVersion": {
+                            "enum": ["5.0.0"]
+                        }
+                    }
                 },
-                "examples": {
-                    "type": "array",
-                    "minItems": 1
-                },
-                "invalidExamples": {
-                    "type": "array",
-                    "minItems": 1
-                }
-            }
-        },
-        "jsonExpressionL10nt": {
-            "type": "array",
-            "minItems": 2,
-            "items": [
-                {
+                "type": {
                     "type": "string",
-                    "pattern": "^\\|l10nt$"
+                    "pattern": "^[a-z]{1,20}(?:-[a-z]{1,20}){0,10}$"
+                },
+                "version": {
+                    "$ref": "#/oneOf/1/definitions/semver"
+                },
+                "sections": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
+                            "type": "object",
+                            "required": ["schema"],
+                            "additionalProperties": false,
+                            "properties": {
+                                "schema": {
+                                    "$ref": "#/oneOf/1/definitions/attributes"
+                                },
+                                "l10n": {
+                                    "$ref": "#/oneOf/1/definitions/l10n"
+                                }
+                            }
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "routes": {
+                    "type": "object",
+                    "required": ["initial", "referrer", "summary", "confirmation", "states"],
+                    "properties": {
+                        "initial": {
+                            "$ref": "#/oneOf/1/definitions/taskId"
+                        },
+                        "referrer": {
+                            "type": "string",
+                            "format": "uri",
+                            "pattern": "^https://"
+                        },
+                        "summary": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/oneOf/1/definitions/pageId"
+                            }
+                        },
+                        "confirmation": {
+                            "$ref": "#/oneOf/1/definitions/pageId"
+                        },
+                        "states": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "patternProperties": {
+                                "^t[-_a-z0-9]{1,40}$": {
+                                    "type": "object",
+                                    "required": ["id", "initial", "states", "status"],
+                                    "properties": {
+                                        "id": {
+                                            "$ref": "#/oneOf/1/definitions/taskId"
+                                        },
+                                        "initial": {
+                                            "$ref": "#/oneOf/1/definitions/pageId"
+                                        },
+                                        "states": {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "patternProperties": {
+                                                "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
+                                                    "type": "object",
+                                                    "oneOf": [
+                                                        {
+                                                            "additionalProperties": false,
+                                                            "required": ["type"],
+                                                            "properties": {
+                                                                "type": {
+                                                                    "const": "final"
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "additionalProperties": false,
+                                                            "required": ["on"],
+                                                            "properties": {
+                                                                "on": {
+                                                                    "type": "object",
+                                                                    "required": ["ANSWER"],
+                                                                    "properties": {
+                                                                        "ANSWER": {
+                                                                            "type": "array",
+                                                                            "minItems": 1,
+                                                                            "items": {
+                                                                                "type": "object",
+                                                                                "required": [
+                                                                                    "target"
+                                                                                ],
+                                                                                "properties": {
+                                                                                    "target": {
+                                                                                        "$ref": "#/oneOf/1/definitions/pageId"
+                                                                                    },
+                                                                                    "cond": {
+                                                                                        "type": "array",
+                                                                                        "minItems": 1
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "guards": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "answers": {
+                    "type": "object"
+                },
+                "taskStatuses": {
+                    "type": "object"
+                },
+                "taxonomies": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9-]{1,30}$": {
+                            "type": "object",
+                            "required": ["taxa"],
+                            "properties": {
+                                "taxa": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^[a-zA-Z0-9-]{1,30}$": {
+                                            "type": "object",
+                                            "required": ["title"],
+                                            "properties": {
+                                                "title": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "$ref": "#/oneOf/1/definitions/jsonExpressionL10nt"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "l10n": {
+                                    "$ref": "#/oneOf/1/definitions/l10n"
+                                }
+                            }
+                        }
+                    }
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "q__roles": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "patternProperties": {
+                                "^(?:[a-z]{1,20}(?:(-|[A-Z])[a-z0-9]{1,20}){0,20})$": {
+                                    "type": "object",
+                                    "required": ["schema"],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "schema": {
+                                            "$ref": "#/oneOf/1/definitions/roleAttributes"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-            ]
+            },
+            "definitions": {
+                "pageId": {
+                    "type": "string",
+                    "pattern": "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$"
+                },
+                "taskId": {
+                    "type": "string",
+                    "pattern": "^t[-_a-z0-9]{1,40}$"
+                },
+                "questionId": {
+                    "type": "string",
+                    "pattern": "^q(?:-[a-z0-9]{1,20}){1,20}$"
+                },
+                "semver": {
+                    "type": "string",
+                    "pattern": "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$"
+                },
+                "l10n": {
+                    "type": "object",
+                    "required": ["vars", "translations"],
+                    "properties": {
+                        "vars": {
+                            "type": "object",
+                            "required": ["lng", "ns"],
+                            "properties": {
+                                "lng": {
+                                    "type": "string"
+                                },
+                                "ns": {
+                                    "type": "string"
+                                },
+                                "context": {
+                                    "type": "object",
+                                    "required": ["$data"],
+                                    "properties": {
+                                        "$data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "translations": {
+                            "type": "array",
+                            "items": {
+                                "required": ["language", "namespace", "resources"],
+                                "properties": {
+                                    "language": {
+                                        "type": "string"
+                                    },
+                                    "namespace": {
+                                        "type": "string"
+                                    },
+                                    "resources": {
+                                        "type": "object",
+                                        "patternProperties": {
+                                            "^[a-zA-Z0-9-_]{1,30}$": {
+                                                "type": ["string", "object"],
+                                                "patternProperties": {
+                                                    "^[a-zA-Z-_]{1,30}$": {
+                                                        "type": ["string", "object"]
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "attributes": {
+                    "type": "object",
+                    "required": ["$schema", "examples", "invalidExamples"],
+                    "properties": {
+                        "$schema": {
+                            "const": "http://json-schema.org/draft-07/schema#"
+                        },
+                        "examples": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "patternProperties": {
+                                    "^q(?:-[a-z0-9]{1,20}){1,20}$": {}
+                                }
+                            }
+                        },
+                        "invalidExamples": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "patternProperties": {
+                                    "^q(?:-[a-z0-9]{1,20}){1,20}$": {}
+                                }
+                            }
+                        }
+                    }
+                },
+                "roleAttributes": {
+                    "type": "object",
+                    "required": ["$schema", "examples", "invalidExamples"],
+                    "properties": {
+                        "$schema": {
+                            "const": "http://json-schema.org/draft-07/schema#"
+                        },
+                        "examples": {
+                            "type": "array",
+                            "minItems": 1
+                        },
+                        "invalidExamples": {
+                            "type": "array",
+                            "minItems": 1
+                        }
+                    }
+                },
+                "jsonExpressionL10nt": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": [
+                        {
+                            "type": "string",
+                            "pattern": "^\\|l10nt$"
+                        }
+                    ]
+                }
+            }
         }
-    }
+    ]
 }

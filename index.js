@@ -23,7 +23,6 @@ function createQuestionnaireTemplateHelper({
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
-    const {states} = routes;
     const ajv = new Ajv({
         allErrors: true,
         jsonPointers: true,
@@ -33,6 +32,23 @@ function createQuestionnaireTemplateHelper({
     }); // options can be passed, e.g. {allErrors: true}
 
     AjvErrors(ajv);
+
+    function getStates() {
+        let stateObj = {};
+        Object.keys(routes.states).forEach(id => {
+            if ('states' in routes.states[id]) {
+                stateObj = {
+                    ...stateObj,
+                    ...routes.states[id].states
+                };
+            }
+        });
+        return Object.keys(stateObj).length === 0
+            ? {tasks: {}, states: routes.states}
+            : {tasks: routes.states, states: stateObj};
+    }
+
+    const {tasks, states} = getStates();
 
     function getAllTargets(state) {
         const targets = _.get(state, 'on.ANSWER');
@@ -66,7 +82,7 @@ function createQuestionnaireTemplateHelper({
     }
 
     function routeExists(stateId, sourcePath) {
-        if (stateId in states) {
+        if (stateId in states || stateId in tasks) {
             return true;
         }
 
