@@ -10,6 +10,8 @@ defaults._.get = require('lodash.get');
 defaults.convertJsonExpressionsToString = require('./utils/convertJsonExpressionsToString');
 defaults.getDataRefsFromJsonExpression = require('./utils/getDataRefsFromJsonExpression');
 
+defaults.impliedRoutes = ['p-task-list'];
+
 function createQuestionnaireTemplateHelper({
     Ajv = defaults.Ajv,
     AjvErrors = defaults.AjvErrors,
@@ -19,7 +21,8 @@ function createQuestionnaireTemplateHelper({
     questionnaireTemplate,
     customSchemaFormats = {},
     convertJsonExpressionsToString = defaults.convertJsonExpressionsToString,
-    getDataRefsFromJsonExpression = defaults.getDataRefsFromJsonExpression
+    getDataRefsFromJsonExpression = defaults.getDataRefsFromJsonExpression,
+    impliedRoutes = defaults.impliedRoutes
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
@@ -51,10 +54,14 @@ function createQuestionnaireTemplateHelper({
     const {tasks, states} = getStates();
 
     function getAllTargets(state) {
-        const targets = _.get(state, 'on.ANSWER');
+        const allTargets = _.get(state, 'on.ANSWER');
 
-        if (Array.isArray(targets)) {
-            return targets.map(destination => destination.target);
+        if (Array.isArray(allTargets)) {
+            // Remove implicit routes from the available targets
+            const filteredTargets = allTargets.filter(
+                target => !impliedRoutes.includes(target.target)
+            );
+            return filteredTargets.map(destination => destination.target);
         }
 
         return [];
@@ -81,11 +88,12 @@ function createQuestionnaireTemplateHelper({
         return [];
     }
 
+    // Ignore implicit routes when checking if they exist
     function routeExists(stateId, sourcePath) {
         if (
             stateId in states ||
             tasks.some(task => stateId === task.id) ||
-            tasks.some(task => stateId in task.states)
+            tasks.some(task => stateId in task.states || impliedRoutes.includes(stateId))
         ) {
             return true;
         }
@@ -114,9 +122,10 @@ function createQuestionnaireTemplateHelper({
     }
 
     // 2 - do all sections have a corresponding route
+    // Ignore implicit routes when checking if they exist
     function ensureAllSectionsHaveCorrespondingRoute() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
-            if (!(sectionId in states)) {
+            if (!(sectionId in states) && !impliedRoutes.includes(sectionId)) {
                 acc.push({
                     type: 'RouteNotFound',
                     source: `/sections/${sectionId}`,
