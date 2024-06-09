@@ -35,16 +35,16 @@ function createQuestionnaireTemplateHelper({
 
     function getStates() {
         let stateObj = {};
-        Object.keys(routes.states).forEach(id => {
-            if ('states' in routes.states[id]) {
+        routes.states.forEach(task => {
+            if ('states' in task) {
                 stateObj = {
                     ...stateObj,
-                    ...routes.states[id].states
+                    ...task.states
                 };
             }
         });
         return Object.keys(stateObj).length === 0
-            ? {tasks: {}, states: routes.states}
+            ? {tasks: [], states: routes.states}
             : {tasks: routes.states, states: stateObj};
     }
 
@@ -82,7 +82,11 @@ function createQuestionnaireTemplateHelper({
     }
 
     function routeExists(stateId, sourcePath) {
-        if (stateId in states || stateId in tasks) {
+        if (
+            stateId in states ||
+            tasks.some(task => stateId === task.id) ||
+            tasks.some(task => stateId in task.states)
+        ) {
             return true;
         }
 

@@ -333,7 +333,6 @@
                 "version",
                 "sections",
                 "routes",
-                "answers",
                 "taskStatuses",
                 "meta",
                 "taxonomies",
@@ -399,59 +398,61 @@
                             "$ref": "#/oneOf/1/definitions/pageId"
                         },
                         "states": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "patternProperties": {
-                                "^t[-_a-z0-9]{1,40}$": {
-                                    "type": "object",
-                                    "required": ["id", "initial", "states", "status"],
-                                    "properties": {
-                                        "id": {
-                                            "$ref": "#/oneOf/1/definitions/taskId"
-                                        },
-                                        "initial": {
-                                            "$ref": "#/oneOf/1/definitions/pageId"
-                                        },
-                                        "states": {
-                                            "type": "object",
-                                            "additionalProperties": false,
-                                            "patternProperties": {
-                                                "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
-                                                    "type": "object",
-                                                    "oneOf": [
-                                                        {
-                                                            "additionalProperties": false,
-                                                            "required": ["type"],
-                                                            "properties": {
-                                                                "type": {
-                                                                    "const": "final"
-                                                                }
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "id",
+                                    "initial",
+                                    "states",
+                                    "status",
+                                    "answers",
+                                    "events"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "$ref": "#/oneOf/1/definitions/taskId"
+                                    },
+                                    "initial": {
+                                        "$ref": "#/oneOf/1/definitions/pageId"
+                                    },
+                                    "states": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "patternProperties": {
+                                            "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
+                                                "type": "object",
+                                                "oneOf": [
+                                                    {
+                                                        "additionalProperties": false,
+                                                        "required": ["type"],
+                                                        "properties": {
+                                                            "type": {
+                                                                "const": "final"
                                                             }
-                                                        },
-                                                        {
-                                                            "additionalProperties": false,
-                                                            "required": ["on"],
-                                                            "properties": {
-                                                                "on": {
-                                                                    "type": "object",
-                                                                    "required": ["ANSWER"],
-                                                                    "properties": {
-                                                                        "ANSWER": {
-                                                                            "type": "array",
-                                                                            "minItems": 1,
-                                                                            "items": {
-                                                                                "type": "object",
-                                                                                "required": [
-                                                                                    "target"
-                                                                                ],
-                                                                                "properties": {
-                                                                                    "target": {
-                                                                                        "$ref": "#/oneOf/1/definitions/pageId"
-                                                                                    },
-                                                                                    "cond": {
-                                                                                        "type": "array",
-                                                                                        "minItems": 1
-                                                                                    }
+                                                        }
+                                                    },
+                                                    {
+                                                        "additionalProperties": false,
+                                                        "required": ["on"],
+                                                        "properties": {
+                                                            "on": {
+                                                                "type": "object",
+                                                                "required": ["ANSWER"],
+                                                                "properties": {
+                                                                    "ANSWER": {
+                                                                        "type": "array",
+                                                                        "minItems": 1,
+                                                                        "items": {
+                                                                            "type": "object",
+                                                                            "required": ["target"],
+                                                                            "properties": {
+                                                                                "target": {
+                                                                                    "$ref": "#/oneOf/1/definitions/pageId"
+                                                                                },
+                                                                                "cond": {
+                                                                                    "type": "array",
+                                                                                    "minItems": 1
                                                                                 }
                                                                             }
                                                                         }
@@ -459,10 +460,16 @@
                                                                 }
                                                             }
                                                         }
-                                                    ]
-                                                }
+                                                    }
+                                                ]
                                             }
                                         }
+                                    },
+                                    "answers": {
+                                        "type": "object"
+                                    },
+                                    "events": {
+                                        "type": "array"
                                     }
                                 }
                             }
@@ -471,9 +478,6 @@
                             "type": "object"
                         }
                     }
-                },
-                "answers": {
-                    "type": "object"
                 },
                 "taskStatuses": {
                     "type": "object"
