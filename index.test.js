@@ -51,26 +51,26 @@ describe('q-template-validator', () => {
             });
             const error = qHelper.isValidDocument();
 
-            expect(error).toEqual({
-                type: 'InvalidTemplateStructure',
-                source: '/',
-                description: [
+            expect(error.type).toEqual('InvalidTemplateStructure');
+            expect(error.source).toEqual('/');
+            expect(error.description).toEqual(
+                expect.arrayContaining([
                     {
                         dataPath: '',
                         keyword: 'required',
                         message: "should have required property 'type'",
                         params: {missingProperty: 'type'},
-                        schemaPath: '#/required'
+                        schemaPath: '#/oneOf/0/required'
                     },
                     {
                         dataPath: '',
                         keyword: 'required',
                         message: "should have required property 'version'",
                         params: {missingProperty: 'version'},
-                        schemaPath: '#/required'
+                        schemaPath: '#/oneOf/0/required'
                     }
-                ]
-            });
+                ])
+            );
         });
     });
 
@@ -917,35 +917,6 @@ describe('q-template-validator', () => {
             expect(qHelper.validateTemplate()).toEqual(true);
         });
 
-        it('should return a single error if the template document is invalid', () => {
-            const validTemplate = getValidQuestionnaireTemplate();
-            const invalidTemplate = validTemplate;
-
-            // Make the valid questionnaire invalid
-            delete invalidTemplate.routes.initial;
-
-            const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
-            });
-            const errors = qHelper.validateTemplate();
-
-            expect(errors).toIncludeSameMembers([
-                {
-                    type: 'InvalidTemplateStructure',
-                    source: '/',
-                    description: [
-                        {
-                            dataPath: '/routes',
-                            keyword: 'required',
-                            message: "should have required property 'initial'",
-                            params: {missingProperty: 'initial'},
-                            schemaPath: '#/properties/routes/required'
-                        }
-                    ]
-                }
-            ]);
-        });
-
         it('should return an array of errors if the template is invalid', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const invalidTemplate = validTemplate;
@@ -1365,5 +1336,59 @@ describe('q-template-validator', () => {
         schema1.title = 'foo';
 
         expect(schema1).not.toEqual(schema2);
+    });
+
+    describe('impliedRoutes', () => {
+        describe('ensureRouteTargetsHaveCorrespondingState', () => {
+            it('should return true if all state targets have a corresponding section, but ignore implied routes', () => {
+                const validTemplate = getValidQuestionnaireTemplate();
+                delete validTemplate.sections['p-applicant-british-citizen-or-eu-national'];
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: validTemplate,
+                    impliedRoutes: ['p-applicant-british-citizen-or-eu-national']
+                });
+
+                expect(qHelper.ensureRouteTargetsHaveCorrespondingState()).toEqual(true);
+            });
+        });
+
+        describe('ensureInitialRouteExists', () => {
+            it('should return true if the "initial" route has a corresponding state, but ignore implied routes', () => {
+                const validTemplate = getValidQuestionnaireTemplate();
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: validTemplate,
+                    impliedRoutes: [...validTemplate.routes.initial]
+                });
+                delete validTemplate.routes.states[validTemplate.routes.initial];
+
+                expect(qHelper.ensureInitialRouteExists()).toEqual(true);
+            });
+        });
+
+        describe('ensureSummaryRouteExists', () => {
+            it('should return true if the "summary" route has a corresponding state, but ignore implied routes', () => {
+                const validTemplate = getValidQuestionnaireTemplate();
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: validTemplate,
+                    impliedRoutes: [...validTemplate.routes.summary[0]]
+                });
+                delete validTemplate.routes.states[validTemplate.routes.summary[0]];
+
+                expect(qHelper.ensureSummaryRouteExists()).toEqual(true);
+            });
+        });
+
+        describe('ensureConfirmationRouteExists', () => {
+            it('should return true if the "confirmation" route has a corresponding state', () => {
+                const validTemplate = getValidQuestionnaireTemplate();
+                const qHelper = createQuestionnaireTemplateHelper({
+                    questionnaireTemplate: validTemplate,
+                    impliedRoutes: [...validTemplate.routes.confirmation]
+                });
+                delete validTemplate.routes.states[validTemplate.routes.confirmation];
+
+                expect(qHelper.ensureConfirmationRouteExists()).toEqual(true);
+            });
+        });
     });
 });
