@@ -917,7 +917,7 @@ describe('q-template-validator', () => {
             expect(qHelper.validateTemplate()).toEqual(true);
         });
 
-        it('should return a single error if the template document is invalid', () => {
+        it('should return error if the template document is invalid', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const invalidTemplate = validTemplate;
 
@@ -925,7 +925,10 @@ describe('q-template-validator', () => {
             delete invalidTemplate.routes.initial;
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
+                customSchemaFormats: {
+                    'mobile-uk': ajvFormatsMobileUk
+                }
             });
             const errors = qHelper.validateTemplate();
 
@@ -939,7 +942,28 @@ describe('q-template-validator', () => {
                             keyword: 'required',
                             message: "should have required property 'initial'",
                             params: {missingProperty: 'initial'},
-                            schemaPath: '#/properties/routes/required'
+                            schemaPath: '#/required'
+                        },
+                        {
+                            dataPath: '/routes',
+                            keyword: 'required',
+                            message: "should have required property 'type'",
+                            params: {missingProperty: 'type'},
+                            schemaPath: '#/required'
+                        },
+                        {
+                            dataPath: '/routes',
+                            keyword: 'required',
+                            message: "should have required property 'id'",
+                            params: {missingProperty: 'id'},
+                            schemaPath: '#/required'
+                        },
+                        {
+                            dataPath: '/routes',
+                            keyword: 'oneOf',
+                            message: 'should match exactly one schema in oneOf',
+                            params: {passingSchemas: null},
+                            schemaPath: '#/properties/routes/oneOf'
                         }
                     ]
                 }
