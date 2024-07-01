@@ -1,15 +1,14 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
+    "description": "Questionnaire Template Schemas",
     "title": "Questionnaire template schema",
     "required": [
         "type",
         "version",
         "sections",
         "routes",
-        "answers",
         "onSubmit",
-        "progress",
         "meta",
         "taxonomies"
     ],
@@ -50,78 +49,19 @@
             },
             "additionalProperties": false
         },
+        "currentSectionId": {
+            "$ref": "#/definitions/pageId"
+        },
         "routes": {
             "type": "object",
-            "required": ["initial", "referrer", "summary", "confirmation", "states"],
-            "properties": {
-                "initial": {
-                    "$ref": "#/definitions/pageId"
+            "oneOf": [
+                {
+                    "$ref": "#/definitions/routes"
                 },
-                "referrer": {
-                    "type": "string",
-                    "format": "uri",
-                    "pattern": "^https://"
-                },
-                "summary": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "$ref": "#/definitions/pageId"
-                    }
-                },
-                "confirmation": {
-                    "$ref": "#/definitions/pageId"
-                },
-                "states": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "patternProperties": {
-                        "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
-                            "type": "object",
-                            "oneOf": [
-                                {
-                                    "additionalProperties": false,
-                                    "required": ["type"],
-                                    "properties": {
-                                        "type": {
-                                            "const": "final"
-                                        }
-                                    }
-                                },
-                                {
-                                    "additionalProperties": false,
-                                    "required": ["on"],
-                                    "properties": {
-                                        "on": {
-                                            "type": "object",
-                                            "required": ["ANSWER"],
-                                            "properties": {
-                                                "ANSWER": {
-                                                    "type": "array",
-                                                    "minItems": 1,
-                                                    "items": {
-                                                        "type": "object",
-                                                        "required": ["target"],
-                                                        "properties": {
-                                                            "target": {
-                                                                "$ref": "#/definitions/pageId"
-                                                            },
-                                                            "cond": {
-                                                                "type": "array",
-                                                                "minItems": 1
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
+                {
+                    "$ref": "#/definitions/routes-parallel"
                 }
-            }
+            ]
         },
         "answers": {
             "type": "object"
@@ -130,11 +70,7 @@
             "type": "object"
         },
         "progress": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-                "$ref": "#/definitions/pageId"
-            }
+            "$ref": "#/definitions/progress"
         },
         "taxonomies": {
             "type": "object",
@@ -199,9 +135,35 @@
             "type": "string",
             "pattern": "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$"
         },
+        "machineId": {
+            "type": "string",
+            "pattern": "^#[a-z-]{1,40}$"
+        },
+        "taskId": {
+            "type": "string",
+            "pattern": "^t((_|-)([-a-z0-9]{1,20}))*$"
+        },
+        "taskCompletionStatusId": {
+            "type": "string",
+            "pattern": "^t((_|-)([-a-z0-9]{1,20}))*__completion-status$"
+        },
+        "taskApplicabilityStatusId": {
+            "type": "string",
+            "pattern": "^t((_|-)([-a-z0-9]{1,20}))*__applicability-status$"
+        },
+        "statusId": {
+            "enum": ["completed", "incomplete", "cannotStartYet", "applicable", "notApplicable"]
+        },
         "questionId": {
             "type": "string",
             "pattern": "^q(?:-[a-z0-9]{1,20}){1,20}$"
+        },
+        "progress": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "$ref": "#/definitions/pageId"
+            }
         },
         "semver": {
             "type": "string",
@@ -316,6 +278,179 @@
                     "pattern": "^\\|l10nt$"
                 }
             ]
+        },
+        "routes": {
+            "type": "object",
+            "required": ["initial", "referrer", "summary", "confirmation", "states"],
+            "properties": {
+                "initial": {
+                    "$ref": "#/definitions/pageId"
+                },
+                "referrer": {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^https://"
+                },
+                "summary": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/pageId"
+                    }
+                },
+                "confirmation": {
+                    "$ref": "#/definitions/pageId"
+                },
+                "states": {
+                    "$ref": "#/definitions/states"
+                }
+            }
+        },
+        "routes-parallel": {
+            "type": "object",
+            "required": ["type", "id", "referrer", "summary", "confirmation", "states"],
+            "properties": {
+                "type": {
+                    "const": "parallel"
+                },
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z-]{3,30}$"
+                },
+                "referrer": {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^https://"
+                },
+                "summary": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/pageId"
+                    }
+                },
+                "confirmation": {
+                    "$ref": "#/definitions/pageId"
+                },
+                "states": {
+                    "$ref": "#/definitions/states-parallel"
+                }
+            }
+        },
+        "states": {
+            "type": "object",
+            "properties": {
+                "initial": {
+                    "$ref": "#/definitions/pageId"
+                },
+                "currentSectionId": {
+                    "$ref": "#/definitions/pageId"
+                },
+                "progress": {
+                    "$ref": "#/definitions/progress"
+                },
+                "states": {
+                    "$ref": "#/definitions/states-entry"
+                }
+            }
+        },
+        "states-parallel": {
+            "type": "object",
+            "patternProperties": {
+                "^t((_|-)([-a-z0-9]{1,20}))*__completion-status$": {
+                    "$ref": "#/definitions/states-status"
+                },
+                "^t((_|-)([-a-z0-9]{1,20}))*__applicability-status$": {
+                    "$ref": "#/definitions/states-status"
+                },
+                "^t((_|-)([-a-z0-9]{1,20}))*$": {
+                            "$ref": "#/definitions/states"
+                }
+            }
+        },
+        "states-status": {
+            "type": "object",
+            "properties": {
+                "initial": {
+                    "$ref": "#/definitions/statusId"
+                },
+                "currentSectionId": {
+                    "$ref": "#/definitions/statusId"
+                },
+                "progress": {
+                    "$ref": "#/definitions/progress"
+                },
+                "states": {
+                    "$ref": "#/definitions/states-status-entry"
+                }
+            }
+        },
+        "states-entry": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "additionalProperties": false,
+                            "required": ["type"],
+                            "properties": {
+                                "type": {
+                                    "const": "final"
+                                }
+                            }
+                        },
+                        {
+                            "additionalProperties": false,
+                            "required": ["on"],
+                            "properties": {
+                                "on": {
+                                    "type": "object",
+                                    "required": ["ANSWER"],
+                                    "properties": {
+                                        "ANSWER": {
+                                            "type": "array",
+                                            "minItems": 1,
+                                            "items": {
+                                                "type": "object",
+                                                "required": ["target"],
+                                                "properties": {
+                                                    "target": {
+                                                        "oneOf": [
+                                                            {
+                                                                "$ref": "#/definitions/pageId"
+                                                            },
+                                                            {
+                                                                "$ref": "#/definitions/machineId"
+                                                            }
+                                                        ]
+                                                    },
+                                                    "cond": {
+                                                        "type": "array",
+                                                        "minItems": 1
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "states-status-entry": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "completed": {},
+                "incomplete": {},
+                "cannotStartYet": {},
+                "applicable": {},
+                "notApplicable": {}
+            }
         }
     }
 }
