@@ -23,7 +23,6 @@ function createQuestionnaireTemplateHelper({
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
-    const {states} = routes;
     const ajv = new Ajv({
         allErrors: true,
         jsonPointers: true,
@@ -33,6 +32,22 @@ function createQuestionnaireTemplateHelper({
     }); // options can be passed, e.g. {allErrors: true}
 
     AjvErrors(ajv);
+
+    function getStates() {
+        if (routes.type && routes.type === 'parallel') {
+            let allStates = {};
+            Object.keys(routes.states).forEach(state => {
+                allStates = {
+                    ...allStates,
+                    ...routes.states[state].states
+                };
+            });
+            return allStates;
+        }
+        return routes.states;
+    }
+
+    const states = getStates();
 
     function getAllTargets(state) {
         const targets = _.get(state, 'on.ANSWER');
@@ -96,7 +111,7 @@ function createQuestionnaireTemplateHelper({
     // 2 - do all sections have a corresponding route
     function ensureAllSectionsHaveCorrespondingRoute() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
-            if (!(sectionId in states)) {
+            if (!(sectionId in states) && !(sectionId in routes.states)) {
                 acc.push({
                     type: 'RouteNotFound',
                     source: `/sections/${sectionId}`,
@@ -117,7 +132,16 @@ function createQuestionnaireTemplateHelper({
     // 2.1 - do all routes have a corresponding section
     function ensureAllRoutesHaveCorrespondingSection() {
         const errors = Object.keys(states).reduce((acc, stateId) => {
-            if (!(stateId in sections)) {
+            if (
+                !(stateId in sections) &&
+                ![
+                    'incomplete',
+                    'completed',
+                    'notApplicable',
+                    'applicable',
+                    'cannotStartYet'
+                ].includes(stateId)
+            ) {
                 acc.push({
                     type: 'SectionNotFound',
                     source: `/routes/states/${stateId}`,
@@ -137,6 +161,9 @@ function createQuestionnaireTemplateHelper({
 
     // 2.2 - Does "initial" have a corresponding route
     function ensureInitialRouteExists() {
+        if (routes.type && routes.type === 'parallel') {
+            return true;
+        }
         return routeExists(routes.initial, '/routes/initial');
     }
 
@@ -164,7 +191,9 @@ function createQuestionnaireTemplateHelper({
             const targets = getAllTargets(state);
 
             targets.forEach((target, i) => {
-                if (!(target in states)) {
+                if (
+                    !(target.replace('#', '') in states || target.replace('#', '') in routes.states)
+                ) {
                     acc.push({
                         type: 'TargetNotFound',
                         source: `/routes/states/${stateId}/on/ANSWER/${i}/target`,
