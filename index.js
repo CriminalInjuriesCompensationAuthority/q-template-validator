@@ -9,6 +9,7 @@ defaults._.has = require('lodash.has');
 defaults._.get = require('lodash.get');
 defaults.convertJsonExpressionsToString = require('./utils/convertJsonExpressionsToString');
 defaults.getDataRefsFromJsonExpression = require('./utils/getDataRefsFromJsonExpression');
+defaults.getDuplicateSections = require('./utils/getDuplicateSections');
 
 function createQuestionnaireTemplateHelper({
     Ajv = defaults.Ajv,
@@ -19,11 +20,11 @@ function createQuestionnaireTemplateHelper({
     questionnaireTemplate,
     customSchemaFormats = {},
     convertJsonExpressionsToString = defaults.convertJsonExpressionsToString,
-    getDataRefsFromJsonExpression = defaults.getDataRefsFromJsonExpression
+    getDataRefsFromJsonExpression = defaults.getDataRefsFromJsonExpression,
+    getDuplicateSections = defaults.getDuplicateSections
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
-    const {states} = routes;
     const ajv = new Ajv({
         allErrors: true,
         jsonPointers: true,
@@ -33,6 +34,22 @@ function createQuestionnaireTemplateHelper({
     }); // options can be passed, e.g. {allErrors: true}
 
     AjvErrors(ajv);
+
+    function getStates() {
+        if (routes.type && routes.type === 'parallel') {
+            let allStates = {};
+            Object.keys(routes.states).forEach(state => {
+                allStates = {
+                    ...allStates,
+                    ...routes.states[state].states
+                };
+            });
+            return allStates;
+        }
+        return routes.states;
+    }
+
+    const states = getStates();
 
     function getAllTargets(state) {
         const targets = _.get(state, 'on.ANSWER');
@@ -96,7 +113,7 @@ function createQuestionnaireTemplateHelper({
     // 2 - do all sections have a corresponding route
     function ensureAllSectionsHaveCorrespondingRoute() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
-            if (!(sectionId in states)) {
+            if (!(sectionId in states) && !(sectionId in routes.states)) {
                 acc.push({
                     type: 'RouteNotFound',
                     source: `/sections/${sectionId}`,
@@ -117,7 +134,16 @@ function createQuestionnaireTemplateHelper({
     // 2.1 - do all routes have a corresponding section
     function ensureAllRoutesHaveCorrespondingSection() {
         const errors = Object.keys(states).reduce((acc, stateId) => {
-            if (!(stateId in sections)) {
+            if (
+                !(stateId in sections) &&
+                ![
+                    'incomplete',
+                    'completed',
+                    'notApplicable',
+                    'applicable',
+                    'cannotStartYet'
+                ].includes(stateId)
+            ) {
                 acc.push({
                     type: 'SectionNotFound',
                     source: `/routes/states/${stateId}`,
@@ -137,6 +163,9 @@ function createQuestionnaireTemplateHelper({
 
     // 2.2 - Does "initial" have a corresponding route
     function ensureInitialRouteExists() {
+        if (routes.type && routes.type === 'parallel') {
+            return true;
+        }
         return routeExists(routes.initial, '/routes/initial');
     }
 
@@ -164,7 +193,9 @@ function createQuestionnaireTemplateHelper({
             const targets = getAllTargets(state);
 
             targets.forEach((target, i) => {
-                if (!(target in states)) {
+                if (
+                    !(target.replace('#', '') in states || target.replace('#', '') in routes.states)
+                ) {
                     acc.push({
                         type: 'TargetNotFound',
                         source: `/routes/states/${stateId}/on/ANSWER/${i}/target`,
@@ -375,6 +406,72 @@ function createQuestionnaireTemplateHelper({
         return true;
     }
 
+    // 7 - Routes can only reference pageIds on their own machine
+    function ensureAllRoutesReferencePageIdsOnSameMachine() {
+        if (routes.type === 'parallel') {
+            const errors = [];
+            Object.keys(routes.states).forEach(task => {
+                Object.keys(routes.states[task].states).forEach(stateId => {
+                    const targets = getAllTargets(routes.states[task].states[stateId]);
+
+                    targets.forEach((target, i) => {
+                        if (!(target in routes.states[task].states || target.startsWith('#'))) {
+                            errors.push({
+                                type: 'TargetNotFound',
+                                source: `/routes/states/${task}/states/${stateId}/on/ANSWER/${i}/target`,
+                                description: `Target '/routes/states/${task}/states/${target}' not found in '${task}'`
+                            });
+                        }
+                    });
+                });
+            });
+
+            if (errors.length > 0) {
+                return errors;
+            }
+        }
+
+        return true;
+    }
+
+    // 8 - Ensure each question belongs to only one task
+    function ensureAllSectionsAreOwnedByOneTaskOnly() {
+        if (routes.type === 'parallel') {
+            const errors = [];
+            const taskStates = [];
+            Object.keys(routes.states).forEach(task => {
+                taskStates.push(Object.keys(routes.states[task].states));
+            });
+            const duplicateSections = getDuplicateSections(taskStates);
+
+            if (duplicateSections.length > 0) {
+                duplicateSections.forEach(sectionId => {
+                    if (
+                        ![
+                            'completed',
+                            'incomplete',
+                            'applicable',
+                            'notApplicable',
+                            'cannotStartYet'
+                        ].includes(sectionId)
+                    ) {
+                        errors.push({
+                            type: 'DuplicateSectionFound',
+                            source: `/sections/${sectionId}`,
+                            description: `Section '/sections/${sectionId}' was found in more than one task`
+                        });
+                    }
+                });
+            }
+
+            if (errors.length > 0) {
+                return errors;
+            }
+        }
+
+        return true;
+    }
+
     function validateTemplate() {
         const results = [isValidDocument()];
 
@@ -389,7 +486,9 @@ function createQuestionnaireTemplateHelper({
                 ensureRouteTargetsHaveCorrespondingState(),
                 ensureAllConditionDataReferencesHaveCorrespondingQuestion(),
                 ensureSectionSchemasAreValid(),
-                ensureAllSectionsHaveThemes()
+                ensureAllSectionsHaveThemes(),
+                ensureAllRoutesReferencePageIdsOnSameMachine(),
+                ensureAllSectionsAreOwnedByOneTaskOnly()
             );
         }
 
@@ -470,6 +569,8 @@ function createQuestionnaireTemplateHelper({
         ensureAllConditionDataReferencesHaveCorrespondingQuestion,
         ensureSectionSchemasAreValid,
         ensureAllRoutesCanBeReached,
+        ensureAllRoutesReferencePageIdsOnSameMachine,
+        ensureAllSectionsAreOwnedByOneTaskOnly,
         validateTemplate,
         removeSchemaElements,
         isValidCompiledDocument,
