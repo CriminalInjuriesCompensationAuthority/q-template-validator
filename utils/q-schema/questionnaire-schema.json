@@ -340,15 +340,6 @@
             ],
             "additionalProperties": false,
             "properties": {
-                "meta": {
-                    "type": "object",
-                    "required": ["questionnaireDocumentVersion"],
-                    "properties": {
-                        "questionnaireDocumentVersion": {
-                            "enum": ["5.0.0"]
-                        }
-                    }
-                },
                 "type": {
                     "type": "string",
                     "pattern": "^[a-z]{1,20}(?:-[a-z]{1,20}){0,10}$"
@@ -377,7 +368,7 @@
                 },
                 "routes": {
                     "type": "object",
-                    "required": ["type", "referrer", "summary", "confirmation", "states", "id"],
+                    "required": ["id", "type", "referrer", "summary", "confirmation", "states"],
                     "properties": {
                         "id": {
                             "type": "string"
@@ -403,60 +394,84 @@
                         "states": {
                             "type": "object",
                             "patternProperties": {
-                                "^(?:t-?(?:-[a-z0-9]{1,20}){1,20}|task-list)$": {
+                                "^(?:t-?(?:[-_][a-z0-9]{1,20}){1,20}|task-list|system)$": {
                                     "type": "object",
-                                    "required": ["initial", "states", "currentSectionId"],
-                                    "initial": {
-                                        "type": "string"
-                                    },
-                                    "currentSectionId": {
-                                        "type": "string"
-                                    },
-                                    "states": {
-                                        "type": "object",
-                                        "additionalProperties": false,
-                                        "patternProperties": {
-                                            "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
-                                                "type": "object",
-                                                "oneOf": [
-                                                    {
-                                                        "additionalProperties": false,
-                                                        "required": ["type"],
-                                                        "properties": {
-                                                            "type": {
-                                                                "const": "final"
+                                    "required": [
+                                        "id",
+                                        "initial",
+                                        "currentSectionId",
+                                        "progress",
+                                        "states"
+                                    ],
+                                    "properties": {
+                                        "id": {
+                                            "$ref": "#/oneOf/1/definitions/taskId"
+                                        },
+                                        "initial": {
+                                            "$ref": "#/oneOf/1/definitions/state"
+                                        },
+                                        "currentSectionId": {
+                                            "$ref": "#/oneOf/1/definitions/state"
+                                        },
+                                        "progress": {
+                                            "type": "array",
+                                            "minItems": 1,
+                                            "items": {
+                                                "$ref": "#/oneOf/1/definitions/state"
+                                            }
+                                        },
+                                        "states": {
+                                            "type": "object",
+                                            "patternProperties": {
+                                                "^(?:p-?(?:-[a-z0-9]{1,20}){1,20}|system|owner|origin)$": {
+                                                    "type": "object",
+                                                    "oneOf": [
+                                                        {
+                                                            "additionalProperties": false,
+                                                            "required": ["type"],
+                                                            "properties": {
+                                                                "type": {
+                                                                    "const": "final"
+                                                                }
                                                             }
-                                                        }
-                                                    },
-                                                    {
-                                                        "additionalProperties": false,
-                                                        "required": ["on"],
-                                                        "properties": {
-                                                            "on": {
-                                                                "type": "object",
-                                                                "patternProperties": {
-                                                                    "^(ANSWER|COMPLETE__T?(?:-_[a-zA-Z0-9]{1,20}){1,20}|CASCADE__T?(?:-_[a-zA-Z0-9]{1,20}){1,20})$": {
-                                                                        "type": "array",
-                                                                        "minItems": 1,
-                                                                        "items": {
-                                                                            "type": "object",
-                                                                            "required": ["target"],
-                                                                            "properties": {
-                                                                                "target": {
-                                                                                    "type": "string"
-                                                                                },
-                                                                                "cond": {
-                                                                                    "type": "array",
-                                                                                    "minItems": 1
+                                                        },
+                                                        {
+                                                            "additionalProperties": false,
+                                                            "required": ["on"],
+                                                            "properties": {
+                                                                "on": {
+                                                                    "type": "object",
+                                                                    "additionalProperties": false,
+                                                                    "patternProperties": {
+                                                                        "^(ANSWER|COMPLETE__T?(?:-_[a-zA-Z0-9]{1,20}){1,20}|CASCADE__T?(?:-_[a-zA-Z0-9]{1,20}){1,20}|UPDATE__STATUS)$": {
+                                                                            "type": "array",
+                                                                            "minItems": 1,
+                                                                            "items": {
+                                                                                "type": "object",
+                                                                                "required": [
+                                                                                    "target"
+                                                                                ],
+                                                                                "properties": {
+                                                                                    "target": {
+                                                                                        "type": "string"
+                                                                                    },
+                                                                                    "cond": {
+                                                                                        "type": "array",
+                                                                                        "minItems": 1
+                                                                                    }
                                                                                 }
                                                                             }
                                                                         }
                                                                     }
                                                                 }
                                                             }
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "additionalProperties": false
                                                         }
-                                                    }
-                                                ]
+                                                    ]
+                                                }
                                             }
                                         }
                                     }
@@ -465,8 +480,17 @@
                         }
                     }
                 },
-                "taskStatuses": {
-                    "type": "object"
+                "currentSectionId": {
+                    "$ref": "#/oneOf/1/definitions/state"
+                },
+                "meta": {
+                    "type": "object",
+                    "required": ["questionnaireDocumentVersion"],
+                    "properties": {
+                        "questionnaireDocumentVersion": {
+                            "enum": ["5.0.0"]
+                        }
+                    }
                 },
                 "taxonomies": {
                     "type": "object",
@@ -524,9 +548,6 @@
                             }
                         }
                     }
-                },
-                "currentSectionId": {
-                    "type": "string"
                 }
             },
             "definitions": {
@@ -536,7 +557,7 @@
                 },
                 "taskId": {
                     "type": "string",
-                    "pattern": "^t[-_a-z0-9]{1,40}$"
+                    "pattern": "^(?:t-?(?:[-_][a-z0-9]{1,20}){1,20}|task-list|system)$"
                 },
                 "questionId": {
                     "type": "string",
@@ -655,6 +676,10 @@
                             "pattern": "^\\|l10nt$"
                         }
                     ]
+                },
+                "state": {
+                    "type": "string",
+                    "pattern": "^#?(?:[pt]-?(?:[-_][a-z0-9]{1,20}){1,20}|system|owner|origin|applicable|notApplicable|cannotStartYet|completed|incomplete)$"
                 }
             }
         }

@@ -9,6 +9,7 @@ defaults._.has = require('lodash.has');
 defaults._.get = require('lodash.get');
 defaults.convertJsonExpressionsToString = require('./utils/convertJsonExpressionsToString');
 defaults.getDataRefsFromJsonExpression = require('./utils/getDataRefsFromJsonExpression');
+defaults.getDuplicateSections = require('./utils/getDuplicateSections');
 
 function createQuestionnaireTemplateHelper({
     Ajv = defaults.Ajv,
@@ -19,7 +20,8 @@ function createQuestionnaireTemplateHelper({
     questionnaireTemplate,
     customSchemaFormats = {},
     convertJsonExpressionsToString = defaults.convertJsonExpressionsToString,
-    getDataRefsFromJsonExpression = defaults.getDataRefsFromJsonExpression
+    getDataRefsFromJsonExpression = defaults.getDataRefsFromJsonExpression,
+    getDuplicateSections = defaults.getDuplicateSections
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
@@ -404,6 +406,72 @@ function createQuestionnaireTemplateHelper({
         return true;
     }
 
+    // 7 - Routes can only reference pageIds on their own machine
+    function ensureAllRoutesAreOnOwnMachine() {
+        if (routes.type === 'parallel') {
+            const errors = [];
+            Object.keys(routes.states).forEach(task => {
+                Object.keys(routes.states[task].states).forEach(stateId => {
+                    const targets = getAllTargets(routes.states[task].states[stateId]);
+
+                    targets.forEach((target, i) => {
+                        if (!(target in routes.states[task].states || target.startsWith('#'))) {
+                            errors.push({
+                                type: 'TargetNotFound',
+                                source: `/routes/states/${task}/states/${stateId}/on/ANSWER/${i}/target`,
+                                description: `Target '/routes/states/${task}/states/${target}' not found in '${task}'`
+                            });
+                        }
+                    });
+                });
+            });
+
+            if (errors.length > 0) {
+                return errors;
+            }
+        }
+
+        return true;
+    }
+
+    // 8 - Ensure each question belongs to only one task
+    function ensureAllSectionsAreOwnedByOneTask() {
+        if (routes.type === 'parallel') {
+            const errors = [];
+            const taskStates = [];
+            Object.keys(routes.states).forEach(task => {
+                taskStates.push(Object.keys(routes.states[task].states));
+            });
+            const duplicateSections = getDuplicateSections(taskStates);
+
+            if (duplicateSections.length > 0) {
+                duplicateSections.forEach(sectionId => {
+                    if (
+                        ![
+                            'completed',
+                            'incomplete',
+                            'applicable',
+                            'notApplicable',
+                            'cannotStartYet'
+                        ].includes(sectionId)
+                    ) {
+                        errors.push({
+                            type: 'DuplicateSectionFound',
+                            source: `/sections/${sectionId}`,
+                            description: `Section '/sections/${sectionId}' was found in more than one task`
+                        });
+                    }
+                });
+            }
+
+            if (errors.length > 0) {
+                return errors;
+            }
+        }
+
+        return true;
+    }
+
     function validateTemplate() {
         const results = [isValidDocument()];
 
@@ -418,7 +486,9 @@ function createQuestionnaireTemplateHelper({
                 ensureRouteTargetsHaveCorrespondingState(),
                 ensureAllConditionDataReferencesHaveCorrespondingQuestion(),
                 ensureSectionSchemasAreValid(),
-                ensureAllSectionsHaveThemes()
+                ensureAllSectionsHaveThemes(),
+                ensureAllRoutesAreOnOwnMachine(),
+                ensureAllSectionsAreOwnedByOneTask()
             );
         }
 
@@ -499,6 +569,8 @@ function createQuestionnaireTemplateHelper({
         ensureAllConditionDataReferencesHaveCorrespondingQuestion,
         ensureSectionSchemasAreValid,
         ensureAllRoutesCanBeReached,
+        ensureAllRoutesAreOnOwnMachine,
+        ensureAllSectionsAreOwnedByOneTask,
         validateTemplate,
         removeSchemaElements,
         isValidCompiledDocument,

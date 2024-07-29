@@ -3,6 +3,7 @@
 const ajvFormatsMobileUk = require('ajv-formats-mobile-uk');
 const createQuestionnaireTemplateHelper = require('./index');
 const validQTemplate = require('./fixtures/valid-questionnaire-template');
+const validParallelTemplate = require('./fixtures/valid-parallel-template');
 const schema = require('./utils/q-schema');
 
 function getValidQuestionnaireTemplate() {
@@ -872,6 +873,86 @@ describe('q-template-validator', () => {
                     }
                 ]);
             });
+        });
+    });
+
+    describe('ensureAllRoutesAreOnOwnMachine', () => {
+        it("Should validate a task that only has targets on it's own machine, or references machines by their taskId", () => {
+            const qHelper = createQuestionnaireTemplateHelper({
+                questionnaireTemplate: validParallelTemplate,
+                customSchemaFormats: {
+                    'mobile-uk': ajvFormatsMobileUk
+                }
+            });
+
+            expect(qHelper.ensureAllRoutesAreOnOwnMachine()).toEqual(true);
+        });
+
+        it('Should error if a target is not on the same machine as the state trying to route to it', () => {
+            const templateWithInvalidRoutes = validParallelTemplate;
+            templateWithInvalidRoutes.routes.states['t-about-application'].states[
+                'p-applicant-who-are-you-applying-for'
+            ].on.ANSWER = [
+                {
+                    target: 'p--check-your-answers'
+                }
+            ];
+            const qHelper = createQuestionnaireTemplateHelper({
+                questionnaireTemplate: templateWithInvalidRoutes,
+                customSchemaFormats: {
+                    'mobile-uk': ajvFormatsMobileUk
+                }
+            });
+            const error = qHelper.ensureAllRoutesAreOnOwnMachine();
+
+            expect(error).toEqual([
+                {
+                    type: 'TargetNotFound',
+                    source: `/routes/states/t-about-application/states/p-applicant-who-are-you-applying-for/on/ANSWER/0/target`,
+                    description:
+                        "Target '/routes/states/t-about-application/states/p--check-your-answers' not found in 't-about-application'"
+                }
+            ]);
+        });
+    });
+
+    describe('ensureAllSectionsAreOwnedByOneTask', () => {
+        it('Should validate if all questions appear in only one task', () => {
+            const qHelper = createQuestionnaireTemplateHelper({
+                questionnaireTemplate: validParallelTemplate,
+                customSchemaFormats: {
+                    'mobile-uk': ajvFormatsMobileUk
+                }
+            });
+
+            expect(qHelper.ensureAllSectionsAreOwnedByOneTask()).toEqual(true);
+        });
+
+        it('Should error if a questionId appears in more than one task.', () => {
+            const templateWithInvalidRoutes = validParallelTemplate;
+            templateWithInvalidRoutes.routes.states['t-about-application'].states[
+                'p--check-your-answers'
+            ] =
+                templateWithInvalidRoutes.routes.states['t-about-application'].states[
+                    'p--context-you-should-not-apply-again'
+                ];
+            const qHelper = createQuestionnaireTemplateHelper({
+                questionnaireTemplate: templateWithInvalidRoutes,
+                customSchemaFormats: {
+                    'mobile-uk': ajvFormatsMobileUk
+                }
+            });
+
+            const error = qHelper.ensureAllSectionsAreOwnedByOneTask();
+
+            expect(error).toEqual([
+                {
+                    type: 'DuplicateSectionFound',
+                    source: '/sections/p--check-your-answers',
+                    description:
+                        "Section '/sections/p--check-your-answers' was found in more than one task"
+                }
+            ]);
         });
     });
 
