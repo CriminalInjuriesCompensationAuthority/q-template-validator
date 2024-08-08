@@ -334,6 +334,7 @@
                 "sections",
                 "routes",
                 "currentSectionId",
+                "onSubmit",
                 "meta",
                 "taxonomies",
                 "attributes"
@@ -482,6 +483,50 @@
                 },
                 "currentSectionId": {
                     "$ref": "#/oneOf/1/definitions/state"
+                },
+                "onSubmit": {
+                    "type": "object",
+                    "required": ["id", "type", "retries", "data"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "id": {
+                            "type": "string"
+                        },
+                        "type": {
+                            "enum": ["sequential", "parallel"]
+                        },
+                        "retries": {
+                            "type": "integer"
+                        },
+                        "data": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["id", "type", "retries", "data"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "id": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    },
+                                    "retries": {
+                                        "type": "integer"
+                                    },
+                                    "data": {
+                                        "type": "object",
+                                        "required": ["logger"],
+                                        "properties": {
+                                            "logger": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
                 "meta": {
                     "type": "object",
