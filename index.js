@@ -229,14 +229,37 @@ function createQuestionnaireTemplateHelper({
                     const dataReference = `${dataReferenceParts[2]}.schema.properties.${dataReferenceParts[3]}`;
 
                     if (_.has(sections, dataReference) === false) {
-                        acc.push({
-                            type: 'ConditionDataReferenceNotFound',
-                            source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond`,
-                            description: `Condition data reference '/sections/${dataReference.replace(
-                                /\./g,
-                                '/'
-                            )}' not found`
-                        });
+                        // Now check for nested properties
+                        const nestedReference = Object.keys(sections).reduce((exists, section) => {
+                            if (
+                                sections[section].schema.allOf !== undefined &&
+                                sections[section].schema.allOf[0].allOf !== undefined
+                            ) {
+                                return (
+                                    exists ||
+                                    sections[section].schema.allOf[0].allOf.reduce(
+                                        (accumulator, property) => {
+                                            return (
+                                                accumulator ||
+                                                dataReferenceParts[3] in property.properties
+                                            );
+                                        },
+                                        false
+                                    )
+                                );
+                            }
+                            return exists || false;
+                        }, false);
+                        if (!nestedReference) {
+                            acc.push({
+                                type: 'ConditionDataReferenceNotFound',
+                                source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond`,
+                                description: `Condition data reference '/sections/${dataReference.replace(
+                                    /\./g,
+                                    '/'
+                                )}' not found`
+                            });
+                        }
                     }
                 });
             });
@@ -340,11 +363,27 @@ function createQuestionnaireTemplateHelper({
                     sectionSchema.allOf.forEach(property => {
                         if ('title' in property) {
                             if (!('meta' in property)) {
-                                acc.push({
-                                    type: 'SectionSchemaFailed',
-                                    source: `/sections/${sectionId}/schema`,
-                                    description: 'Schema does not contain meta data'
-                                });
+                                if ('allOf' in property) {
+                                    const metaExists = property.allOf.reduce((valid, prop) => {
+                                        return (
+                                            prop.properties[Object.keys(prop.properties)[0]] &&
+                                            valid
+                                        );
+                                    }, true);
+                                    if (!metaExists) {
+                                        acc.push({
+                                            type: 'SectionSchemaFailed',
+                                            source: `/sections/${sectionId}/schema`,
+                                            description: 'Schema does not contain meta data'
+                                        });
+                                    }
+                                } else {
+                                    acc.push({
+                                        type: 'SectionSchemaFailed',
+                                        source: `/sections/${sectionId}/schema`,
+                                        description: 'Schema does not contain meta data'
+                                    });
+                                }
                             } else if (!('classifications' in property.meta)) {
                                 acc.push({
                                     type: 'SectionSchemaFailed',
