@@ -134,6 +134,9 @@
                 "onSubmit": {
                     "type": "object"
                 },
+                "onCreate": {
+                    "type": "object"
+                },
                 "progress": {
                     "type": "array",
                     "minItems": 1,
