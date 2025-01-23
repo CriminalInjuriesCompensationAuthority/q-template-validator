@@ -1,12 +1,9 @@
 'use strict';
 
 const defaults = {_: {}};
-defaults._.has = require('lodash.has');
-defaults._.get = require('lodash.get');
 defaults.createQuestionnaireRouter = require('q-router');
 
 function createQuestionnairePathsHelper({
-    _ = defaults._,
     createQuestionnaireRouter = defaults.createQuestionnaireRouter,
     ignoreStates = ['system', 'owner']
 } = {}) {
@@ -49,7 +46,7 @@ function createQuestionnairePathsHelper({
     }
 
     function getAllTargets(state) {
-        const targets = _.get(state, 'on.ANSWER') || [];
+        const targets = state?.on?.ANSWER || [];
         const targetIds = targets.map(targetDefinition => targetDefinition.target);
 
         return new Set(targetIds);
@@ -75,7 +72,7 @@ function createQuestionnairePathsHelper({
     }
 
     function getValidExamples(stateId, template) {
-        const validExamples = _.get(template, `sections.${stateId}.examples`);
+        const validExamples = template?.sections?.[stateId]?.examples;
         const containsRoutingQuestion = isUsedForRouting(stateId, template.routes.states);
 
         if (Array.isArray(validExamples) && validExamples.length > 0) {

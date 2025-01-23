@@ -5,8 +5,6 @@ defaults.Ajv = require('ajv');
 defaults.AjvErrors = require('ajv-errors');
 defaults.qSchema = require('./utils/q-schema');
 defaults.createQPathsInstance = require('./q-paths-helper');
-defaults._.has = require('lodash.has');
-defaults._.get = require('lodash.get');
 defaults.convertJsonExpressionsToString = require('./utils/convertJsonExpressionsToString');
 defaults.getDataRefsFromJsonExpression = require('./utils/getDataRefsFromJsonExpression');
 defaults.getDuplicateSections = require('./utils/getDuplicateSections');
@@ -16,7 +14,6 @@ function createQuestionnaireTemplateHelper({
     AjvErrors = defaults.AjvErrors,
     qSchema = defaults.qSchema,
     createQPathsInstance = defaults.createQPathsInstance,
-    _ = defaults._,
     questionnaireTemplate,
     customSchemaFormats = {},
     convertJsonExpressionsToString = defaults.convertJsonExpressionsToString,
@@ -52,7 +49,7 @@ function createQuestionnaireTemplateHelper({
     const states = getStates();
 
     function getAllTargets(state) {
-        const targets = _.get(state, 'on.ANSWER');
+        const targets = state?.on?.ANSWER;
 
         if (Array.isArray(targets)) {
             return targets.map(destination => destination.target);
@@ -62,7 +59,7 @@ function createQuestionnaireTemplateHelper({
     }
 
     function getAllConditions(state) {
-        const targets = _.get(state, 'on.ANSWER');
+        const targets = state?.on?.ANSWER;
 
         if (Array.isArray(targets)) {
             return targets.reduce((acc, target, i) => {
@@ -225,17 +222,14 @@ function createQuestionnaireTemplateHelper({
                 const dataRefs = getDataRefsFromJsonExpression(jsonExpression);
 
                 dataRefs.forEach(dataRef => {
-                    const dataReferenceParts = dataRef.split('.');
-                    const dataReference = `${dataReferenceParts[2]}.schema.properties.${dataReferenceParts[3]}`;
+                    const [, , sectionId, questionId] = dataRef.split('.');
+                    const data = sections?.[sectionId]?.schema?.properties?.[questionId];
 
-                    if (_.has(sections, dataReference) === false) {
+                    if (data === undefined) {
                         acc.push({
                             type: 'ConditionDataReferenceNotFound',
                             source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond`,
-                            description: `Condition data reference '/sections/${dataReference.replace(
-                                /\./g,
-                                '/'
-                            )}' not found`
+                            description: `Condition data reference '/sections/${sectionId}/schema/properties/${questionId}' not found`
                         });
                     }
                 });
@@ -255,8 +249,8 @@ function createQuestionnaireTemplateHelper({
     function ensureSectionSchemasAreValid() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
             const sectionSchema = sections[sectionId].schema;
-            const validExamples = _.get(sectionSchema, 'examples');
-            const invalidExamples = _.get(sectionSchema, 'invalidExamples');
+            const validExamples = sectionSchema.examples;
+            const {invalidExamples} = sectionSchema;
             const preProcessedSectionSchema = convertJsonExpressionsToString(sectionSchema);
             const validate = ajv.compile(preProcessedSectionSchema);
 
