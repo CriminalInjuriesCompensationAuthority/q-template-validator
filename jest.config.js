@@ -7,8 +7,6 @@ const config = {
 };
 /*! m0-end */
 
-config.setupFilesAfterEnv = ['jest-extended'];
-
 /*! m0-start */
 module.exports = config;
 /*! m0-end */

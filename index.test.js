@@ -276,8 +276,7 @@ describe('q-template-validator', () => {
                 questionnaireTemplate: invalidTemplate
             });
             const errors = qHelper.ensureRouteTargetsHaveCorrespondingState();
-
-            expect(errors).toIncludeSameMembers([
+            const expectedErrors = [
                 {
                     type: 'TargetNotFound',
                     source:
@@ -311,7 +310,10 @@ describe('q-template-validator', () => {
                     source: '/routes/states/p-applicant-fatal-claim/on/ANSWER/0/target',
                     description: "Target '/routes/states/p--transition' not found"
                 }
-            ]);
+            ];
+
+            expect(errors.length).toEqual(expectedErrors.length);
+            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
         });
     });
 
@@ -339,9 +341,8 @@ describe('q-template-validator', () => {
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: invalidTemplate
             });
-            const error = qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion();
-
-            expect(error).toIncludeSameMembers([
+            const errors = qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion();
+            const expectedErrors = [
                 {
                     type: 'ConditionDataReferenceNotFound',
                     source:
@@ -349,7 +350,10 @@ describe('q-template-validator', () => {
                     description:
                         "Condition data reference '/sections/p-foo/schema/properties/q-baz' not found"
                 }
-            ]);
+            ];
+
+            expect(errors.length).toEqual(expectedErrors.length);
+            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
         });
 
         describe('Nested JSON Expressions', () => {
@@ -403,9 +407,8 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: invalidTemplate
                 });
-                const error = qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion();
-
-                expect(error).toIncludeSameMembers([
+                const errors = qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion();
+                const expectedErrors = [
                     {
                         type: 'ConditionDataReferenceNotFound',
                         source:
@@ -413,7 +416,12 @@ describe('q-template-validator', () => {
                         description:
                             "Condition data reference '/sections/p-does-not-exist/schema/properties/q-does-not-exist' not found"
                     }
-                ]);
+                ];
+
+                expect(errors.length).toEqual(expectedErrors.length);
+                expectedErrors.forEach(expectedError =>
+                    expect(errors).toContainEqual(expectedError)
+                );
             });
         });
     });
@@ -702,8 +710,7 @@ describe('q-template-validator', () => {
                     }
                 });
                 const errors = qHelper.ensureSectionSchemasAreValid();
-
-                expect(errors).toIncludeSameMembers([
+                const expectedErrors = [
                     {
                         type: 'SectionSchemaFailed',
                         source: '/sections/p-applicant-british-citizen-or-eu-national/schema',
@@ -722,7 +729,12 @@ describe('q-template-validator', () => {
                         description:
                             "invalidExample '/sections/p-applicant-are-you-18-or-over/schema/invalidExamples/1' should not pass schema validation"
                     }
-                ]);
+                ];
+
+                expect(errors.length).toEqual(expectedErrors.length);
+                expectedErrors.forEach(expectedError =>
+                    expect(errors).toContainEqual(expectedError)
+                );
             });
         });
     });
@@ -1084,8 +1096,7 @@ describe('q-template-validator', () => {
                 }
             });
             const errors = qHelper.validateTemplate();
-
-            expect(errors).toIncludeSameMembers([
+            const expectedErrors = [
                 {
                     type: 'RouteNotFound',
                     source: '/routes/initial',
@@ -1146,7 +1157,10 @@ describe('q-template-validator', () => {
                     source: '/routes/states/p-applicant-declaration',
                     description: "Section '/sections/p-applicant-declaration' not found"
                 }
-            ]);
+            ];
+
+            expect(errors.length).toEqual(expectedErrors.length);
+            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
         });
     });
 
