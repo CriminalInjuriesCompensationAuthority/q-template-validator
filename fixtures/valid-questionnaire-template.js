@@ -6058,120 +6058,6 @@ const validQTemplate = {
                 ]
             }
         },
-        'p-applicant-expenses': {
-            schema: {
-                $schema: 'http://json-schema.org/draft-07/schema#',
-                type: 'object',
-                required: ['q-applicant-expenses'],
-                additionalProperties: false,
-                properties: {
-                    'q-applicant-expenses': {
-                        title: 'What expenses have you had?',
-                        type: 'array',
-                        items: {
-                            anyOf: [
-                                {
-                                    title: 'Buying or repairing physical aids',
-                                    const: 'aids'
-                                },
-                                {
-                                    title: 'Alterations to my home',
-                                    const: 'alterations'
-                                },
-                                {
-                                    title: 'Home care',
-                                    const: 'home-care'
-                                },
-                                {
-                                    title: "NHS treatment I've paid for",
-                                    const: 'treatment',
-                                    description:
-                                        'Or treatment from the state health service in another country'
-                                },
-                                {
-                                    title: 'I have not had these expenses',
-                                    const: 'no-expenses'
-                                }
-                            ]
-                        },
-                        meta: {
-                            classifications: {
-                                theme: 'special-expenses'
-                            }
-                        }
-                    }
-                },
-                allOf: [
-                    {
-                        $ref: '#/definitions/if-other-then-q-applicant-expenses-max-one-item'
-                    }
-                ],
-                definitions: {
-                    'if-other-then-q-applicant-expenses-max-one-item': {
-                        if: {
-                            properties: {
-                                'q-applicant-expenses': {
-                                    contains: {
-                                        const: 'no-expenses'
-                                    }
-                                }
-                            },
-                            required: ['q-applicant-expenses']
-                        },
-                        then: {
-                            required: ['q-applicant-expenses'],
-                            properties: {
-                                'q-applicant-expenses': {
-                                    maxItems: 1,
-                                    errorMessage: {
-                                        maxItems:
-                                            'Select any expenses you’ve had or select ‘I have not had these expenses’'
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                errorMessage: {
-                    required: {
-                        'q-applicant-expenses': 'Select expenses from the list'
-                    }
-                },
-                examples: [
-                    {
-                        'q-applicant-expenses': ['home-care']
-                    }
-                ],
-                invalidExamples: [
-                    {
-                        'q-applicant-expenses': 'not-an-array'
-                    },
-                    {
-                        'q-applicant-expenses': ['not-a-key']
-                    }
-                ]
-            }
-        },
-        'p--context-money': {
-            schema: {
-                $schema: 'http://json-schema.org/draft-07/schema#',
-                type: 'object',
-                additionalProperties: false,
-                properties: {
-                    'money-context': {
-                        title: 'Your money',
-                        description:
-                            '<p class="govuk-body">We\'re going to ask if you\'ve lost money as a result of the crime.</p><p class="govuk-body">This will help us decide if you\'ll get a payment for expenses or loss of earnings.</p>'
-                    }
-                },
-                examples: [{}],
-                invalidExamples: [
-                    {
-                        foo: 'bar'
-                    }
-                ]
-            }
-        },
         'p-applicant-pregnancy-loss': {
             l10n: {
                 vars: {
@@ -9658,15 +9544,6 @@ const validQTemplate = {
                     ]
                 }
             },
-            'p--context-money': {
-                on: {
-                    ANSWER: [
-                        {
-                            target: 'p-applicant-unable-to-work-duration'
-                        }
-                    ]
-                }
-            },
             'p-applicant-unable-to-work-duration': {
                 on: {
                     ANSWER: [
@@ -9714,15 +9591,6 @@ const validQTemplate = {
                         },
                         {
                             target: 'p-applicant-unable-to-work'
-                        }
-                    ]
-                }
-            },
-            'p-applicant-expenses': {
-                on: {
-                    ANSWER: [
-                        {
-                            target: 'p--context-compensation'
                         }
                     ]
                 }

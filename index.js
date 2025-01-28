@@ -1,6 +1,6 @@
 'use strict';
 
-const defaults = {_: {}};
+const defaults = {};
 defaults.Ajv = require('ajv');
 defaults.AjvErrors = require('ajv-errors');
 defaults.qSchema = require('./utils/q-schema');
@@ -8,6 +8,7 @@ defaults.createQPathsInstance = require('./q-paths-helper');
 defaults.convertJsonExpressionsToString = require('./utils/convertJsonExpressionsToString');
 defaults.getDataRefsFromJsonExpression = require('./utils/getDataRefsFromJsonExpression');
 defaults.getDuplicateSections = require('./utils/getDuplicateSections');
+defaults.ensureAllSectionsAreReferencedByRouteTarget = require('./validators/ensureAllSectionsAreReferencedByRouteTarget');
 
 function createQuestionnaireTemplateHelper({
     Ajv = defaults.Ajv,
@@ -18,7 +19,8 @@ function createQuestionnaireTemplateHelper({
     customSchemaFormats = {},
     convertJsonExpressionsToString = defaults.convertJsonExpressionsToString,
     getDataRefsFromJsonExpression = defaults.getDataRefsFromJsonExpression,
-    getDuplicateSections = defaults.getDuplicateSections
+    getDuplicateSections = defaults.getDuplicateSections,
+    ensureAllSectionsAreReferencedByRouteTarget = defaults.ensureAllSectionsAreReferencedByRouteTarget
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
@@ -314,7 +316,6 @@ function createQuestionnaireTemplateHelper({
     }
 
     // 6 - do all sections have a theme
-
     function ensureAllSectionsHaveThemes() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
             if (
@@ -482,7 +483,11 @@ function createQuestionnaireTemplateHelper({
                 ensureSectionSchemasAreValid(),
                 ensureAllSectionsHaveThemes(),
                 ensureAllRoutesReferencePageIdsOnSameMachine(),
-                ensureAllSectionsAreOwnedByOneTaskOnly()
+                ensureAllSectionsAreOwnedByOneTaskOnly(),
+                ensureAllSectionsAreReferencedByRouteTarget({
+                    template: questionnaire,
+                    sectionIdIgnoreList: ['system', 'owner', 'origin']
+                })
             );
         }
 

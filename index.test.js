@@ -1156,11 +1156,17 @@ describe('q-template-validator', () => {
                     type: 'SectionNotFound',
                     source: '/routes/states/p-applicant-declaration',
                     description: "Section '/sections/p-applicant-declaration' not found"
+                },
+                {
+                    type: 'UntargetedSection',
+                    source: '/sections/p-applicant-fatal-claim',
+                    description:
+                        "Section '/sections/p-applicant-fatal-claim' is not targeted by any route"
                 }
             ];
 
-            expect(errors.length).toEqual(expectedErrors.length);
             expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
+            expect(errors.length).toEqual(expectedErrors.length);
         });
     });
 
