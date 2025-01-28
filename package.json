@@ -30,7 +30,6 @@
     },
     "dependencies": {
         "ajv": "^6.12.0",
-        "ajv-errors": "^1.0.1",
-        "q-router": "github:CriminalInjuriesCompensationAuthority/q-router#v3.0.0"
+        "ajv-errors": "^1.0.1"
     }
 }

@@ -4,7 +4,6 @@ const defaults = {};
 defaults.Ajv = require('ajv');
 defaults.AjvErrors = require('ajv-errors');
 defaults.qSchema = require('./utils/q-schema');
-defaults.createQPathsInstance = require('./q-paths-helper');
 defaults.convertJsonExpressionsToString = require('./utils/convertJsonExpressionsToString');
 defaults.getDataRefsFromJsonExpression = require('./utils/getDataRefsFromJsonExpression');
 defaults.getDuplicateSections = require('./utils/getDuplicateSections');
@@ -14,7 +13,6 @@ function createQuestionnaireTemplateHelper({
     Ajv = defaults.Ajv,
     AjvErrors = defaults.AjvErrors,
     qSchema = defaults.qSchema,
-    createQPathsInstance = defaults.createQPathsInstance,
     questionnaireTemplate,
     customSchemaFormats = {},
     convertJsonExpressionsToString = defaults.convertJsonExpressionsToString,
@@ -296,25 +294,6 @@ function createQuestionnaireTemplateHelper({
         return true;
     }
 
-    // 5 - can all route permutations be reached
-    function ensureAllRoutesCanBeReached() {
-        const qPaths = createQPathsInstance();
-        const paths = qPaths.getPaths(questionnaire);
-        const unvisitedPaths = paths.unvisited;
-
-        if (unvisitedPaths.length > 0) {
-            const errors = unvisitedPaths.map(unvisitedPath => ({
-                type: 'UnvisitedPath',
-                source: '/routes/states',
-                description: unvisitedPath.split(',')
-            }));
-
-            return errors;
-        }
-
-        return true;
-    }
-
     // 6 - do all sections have a theme
     function ensureAllSectionsHaveThemes() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
@@ -491,12 +470,6 @@ function createQuestionnaireTemplateHelper({
             );
         }
 
-        // TODO: reinstate this when https://github.com/CriminalInjuriesCompensationAuthority/q-template-validator/issues/11 is resolved
-        // Only run this is if everything else is valid
-        // if (results.every(result => result === true)) {
-        //     results.push(ensureAllRoutesCanBeReached());
-        // }
-
         // Each result could be an array of errors. Add all array elements to a single array
         const errors = results.reduce((acc, result) => {
             if (result !== true) {
@@ -567,7 +540,6 @@ function createQuestionnaireTemplateHelper({
         ensureRouteTargetsHaveCorrespondingState,
         ensureAllConditionDataReferencesHaveCorrespondingQuestion,
         ensureSectionSchemasAreValid,
-        ensureAllRoutesCanBeReached,
         ensureAllRoutesReferencePageIdsOnSameMachine,
         ensureAllSectionsAreOwnedByOneTaskOnly,
         validateTemplate,
