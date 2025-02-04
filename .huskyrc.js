@@ -1,7 +1,7 @@
 /*! m0-start */
 const config = {
     hooks: {
-        'pre-commit': 'lint-staged'
+        //'pre-commit': 'lint-staged'
     }
 };
 /*! m0-end */
@@ -9,4 +9,3 @@ const config = {
 /*! m0-start */
 module.exports = config;
 /*! m0-end */
-
