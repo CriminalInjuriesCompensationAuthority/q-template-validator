@@ -2,6 +2,8 @@
 
 // assumes routing logic is sound (i.e. there are no conditions like go to page a if question 1 = true and question 1 = false)
 // also assumes that there are no duplicate conditional routes on a page (ors are fine but not multiple route objects with the same target)
+// also assumes that 'includes' questions can always have any number of their possible answers selected (no conditional includes)
+// Also assumes that all questions referenced in a route exist on the page they are said to exist on
 
 // assumes that satisfiability/matching can only happen for the same question via the same method except for != and =. For most this is fine
 // e.g. you can't have both an == and an includes condition for the same question, but in theory for dates it could be bad.
@@ -17,7 +19,11 @@ function matches(preconditionAnswer, routeAnswer) {
             return preconditionAnswer.value.some(answer => routeAnswer.value.includes(answer));
         }
         // this catches conditions where the route/precondition is a != and the other is an ==
-        return preconditionAnswer.includes(routeAnswer) || routeAnswer.includes(preconditionAnswer);
+        console.log(preconditionAnswer);
+        return (
+            preconditionAnswer.value.includes(routeAnswer.value) ||
+            routeAnswer.value.includes(preconditionAnswer.value)
+        );
     }
     if (preconditionAnswer.type === 'includes') {
         // these are always valid - if the route includes a and the target includes b its still reachable just not guaranteed
@@ -72,7 +78,11 @@ function getAllRoleDefinitions(template) {
     const roles = template.attributes.q__roles;
     const roleDefinitions = {};
     Object.keys(roles).forEach(role => {
-        roleDefinitions[role] = roles[role].schema.const;
+        let complex = false;
+        if (roles[role].schema.const.flat(Infinity).includes('or')) {
+            complex = true;
+        }
+        roleDefinitions[role] = {roleCondition: roles[role].schema.const, complex};
     });
 
     return roleDefinitions;
@@ -111,9 +121,9 @@ function setSimpleCondition(condition) {
         const question = condition[1].split('.')[3];
         answers[page] = {};
         if (condition[2] === '>=') {
-            answers[page][question] = {type: '>', value: parseint(condition[3]) + 1};
+            answers[page][question] = {type: '>', value: parseInt(condition[3], 10) + 1};
         } else if (condition[2] === '<=') {
-            answers[page][question] = {type: '<', value: parseint(condition[3]) - 1};
+            answers[page][question] = {type: '<', value: parseInt(condition[3], 10) - 1};
         } else {
             answers[page][question] = {type: condition[2], value: condition[3]};
         }
@@ -130,15 +140,17 @@ function setSimpleCondition(condition) {
         answers[oldPage][oldQuestion] = Date.now() - 50 * 3600 * 1000;
         answers[newPage] = {};
         answers[newPage][newQuestion] = Date.now();
-        // return answers;
-    } else if (condition[0] === '!=') {
+        return answers;
+    }
+    if (condition[0] === '!=') {
         const answers = {};
         const page = `${condition[1].split('.')[2]}!=${condition[1].split('.')[3]}!=${
             condition[2]
         }`;
         answers[page] = {};
         return answers;
-    } else {
+    }
+    if (condition[0] === '==') {
         const answers = {};
         const page = condition[1].split('.')[2];
         const question = condition[1].split('.')[3];
@@ -146,30 +158,40 @@ function setSimpleCondition(condition) {
         answers[page][question] = {type: condition[0], value: condition[2]};
         return answers;
     }
+    // handle any unsimplified roles
+    const answers = {};
+    answers[condition] = 'role';
+    return answers;
 }
 
-function expandConditionExpression(condition, roles) {
+function expandConditionExpression(condition, roles, expandComplexRoles) {
     if (condition[0] === 'or') {
-        condition.shift();
-        const expandedExpression = condition.map(subCondition => {
-            return expandConditionExpression(subCondition, roles);
+        const conditionValues = condition.slice(1);
+        const expandedExpression = conditionValues.map(subCondition => {
+            return expandConditionExpression(subCondition, roles, expandComplexRoles);
         });
         return {or: expandedExpression};
     }
     if (condition[0] === 'and') {
         const answers = {};
-        condition.shift();
-        return condition.reduce((answers, subCondition) => {
-            return {...answers, ...expandConditionExpression(subCondition, roles)};
+        const conditionValues = condition.slice(1);
+        return conditionValues.reduce((answer, subCondition) => {
+            return {
+                ...answer,
+                ...expandConditionExpression(subCondition, roles, expandComplexRoles)
+            };
         }, answers);
     }
     if (condition[0] === '|role.all') {
-        condition.shift();
-        const replacedRoles = condition.map(role => {
-            return roles[role];
+        const conditionValues = condition.slice(1);
+        const replacedRoles = conditionValues.map(role => {
+            if (roles[role].complex === true && expandComplexRoles === false) {
+                return role;
+            }
+            return roles[role].roleCondition;
         });
         replacedRoles.unshift('and');
-        return expandConditionExpression(replacedRoles, roles);
+        return expandConditionExpression(replacedRoles, roles, expandComplexRoles);
     }
     return setSimpleCondition(condition);
 }
@@ -188,40 +210,45 @@ function splitOrExpressions(expression) {
 
 function collateNotEqualToConditions(preconditions, template) {
     // use template to get all possible values to a question. then remove any referenced by the != question leaving an array of allowed values
+    const newPreconditions = [];
+    console.log(template);
     preconditions.forEach(precondition => {
+        const newPrecondition = {};
         Object.keys(precondition).forEach(page => {
             if (page.includes('!=')) {
                 const pageId = page.split('!=')[0];
                 const questionId = page.split('!=')[1];
                 const value = page.split('!=')[2];
-                delete precondition[page];
-                if (precondition[pageId] === undefined) {
-                    precondition[pageId] = {};
+                if (newPrecondition[pageId] === undefined) {
+                    newPrecondition[pageId] = {};
                 }
-                if (precondition[pageId][questionId] === undefined) {
+                if (newPrecondition[pageId][questionId] === undefined) {
                     const allValues = template.sections[pageId]?.schema?.properties?.[
                         questionId
                     ].oneOf.map(answer => answer.const);
                     allValues.splice(allValues.indexOf(value), 1);
-                    precondition[pageId][questionId] = {type: '!=', value: allValues};
+                    newPrecondition[pageId][questionId] = {type: '!=', value: allValues};
                 } else {
-                    precondition[pageId][questionId].value.splice(
-                        precondition[pageId][questionId].value.indexOf(value),
+                    newPrecondition[pageId][questionId].value.splice(
+                        newPrecondition[pageId][questionId].value.indexOf(value),
                         1
                     );
                 }
+            } else {
+                newPrecondition[page] = precondition[page];
             }
         });
+        newPreconditions.push(newPrecondition);
     });
-    return preconditions;
+    return newPreconditions;
 }
 
 function getSectionPreconditions(section, template, roles) {
-    // Returns an array of answers objects where each object corresponds to a different route off the page, with ORs split into distinct answers objects
     if (template.routes.states[section].type === 'final') {
         // final states lead to no other states
         return [];
     }
+    // First get all the conditional routes
     const conditionalRoutes = template.routes.states[section].on.ANSWER.filter(
         route => route.cond
     ).map(route => route.cond);
@@ -229,18 +256,49 @@ function getSectionPreconditions(section, template, roles) {
         // if a page has no conditional routing it will always be traversable
         return [];
     }
+
+    // Then expand the conditional routes, splitting up any ANDs/ORs and replacing roles that rely on just ANDs and single values
     const expandedPreconditions = conditionalRoutes
-        .map(condition => splitOrExpressions(expandConditionExpression(condition, roles)))
+        .map(condition => splitOrExpressions(expandConditionExpression(condition, roles, false)))
         .flat(Infinity);
+    // Then replace more complex roles (that use ORs) with their true values
+    const expandedRoles = expandedPreconditions.map(precondition => {
+        let newCondition = {};
+        Object.keys(precondition).forEach(subCondition => {
+            if (precondition[subCondition] === 'role') {
+                const roleCondition = expandConditionExpression(
+                    roles[subCondition].roleCondition,
+                    roles,
+                    true
+                );
+                newCondition = {...newCondition, ...roleCondition};
+            } else {
+                newCondition[subCondition] = precondition[subCondition];
+            }
+        });
+        if (newCondition.or) {
+            // TODO: if there are issues in more complex or scenarios they are likely caused by either this if statement or the splitOrExpressionsFunction
+            // For some reason if the complex role is expanded above splitOrExpressions returns an array that is one too deep, hence the if statement
+            // This is likely to do with needing the flat(infinity) earlier
+            return splitOrExpressions(newCondition);
+        }
+        return [newCondition];
+    });
 
-    const cleanedPreconditions = collateNotEqualToConditions(expandedPreconditions, template);
+    // Then replace any != conditions with a list of allowed values (this makes satisfaction checking easier)
+    const cleanedPreconditions = expandedRoles.map(precondition =>
+        collateNotEqualToConditions(precondition, template)
+    );
 
+    // Then, if there are no default routes, create an inverse of all other routes to signify an illegal route
     if (conditionalRoutes.length === template.routes.states[section].on.ANSWER.length) {
-        // TODO: expandedPreconditions.push(getInverseCondition(expandedPreconditions));
-        // This is a nice to have that goes beyond what our current BDD can do anyway
+        // TODO: this is a nice to have that goes beyond what our current BDD can do anyway
         // it would tell us if it is possible to get stuck on a page (i.e. tell us undocumented behaviour)
         return cleanedPreconditions;
     }
+
+    // Returns an array of arrays of answers objects where each object corresponds to a different route off the page, where multiple answers objects in the same array signify an OR
+    // i.e. [[pc1],[pc2.1, pc2.2], [pc3]]
     return cleanedPreconditions;
 }
 
@@ -271,10 +329,13 @@ function checkSatisfiability(section, template, precondition, targetSection, rol
         }
     }
 
+    // after this will need changing once the roles stuff has changed - maybe just have a flag for full expansion in the expand function
     const splitRoutesToTarget = collateNotEqualToConditions(
-        [splitOrExpressions(expandConditionExpression(routeToTarget.cond, roles))].flat(Infinity)
+        [splitOrExpressions(expandConditionExpression(routeToTarget.cond, roles, true))].flat(
+            Infinity
+        ),
+        template
     );
-
     // the above is now a list of 'answers' objects.
 
     const satisfiedRoutesToTarget = splitRoutesToTarget.map(route =>
@@ -297,7 +358,6 @@ function checkSatisfiability(section, template, precondition, targetSection, rol
 
 function checkValid(targetSection, template, precondition, roles) {
     // TODO: if we hit the start of the application but still have preconditions then is something wrong or is it invalid? not sure but probably something wrong
-    console.log(precondition);
     const previousSections = getPreviousSections(targetSection, template);
     const valid = previousSections.some(section => {
         const satisfiability = checkSatisfiability(
@@ -324,35 +384,42 @@ function checkValid(targetSection, template, precondition, roles) {
 function ensureAllConditionsAreSatisfiable(template) {
     const roles = getAllRoleDefinitions(template);
     const result = Object.keys(template.routes.states).every(section => {
-        const preconditions = getSectionPreconditions(section, template, roles).filter(
+        const preconditionsWithOrs = getSectionPreconditions(section, template, roles).map(
+            // delete any conditions that only depend on the page they lead off from
             condition => {
-                return Object.keys(condition).every(
-                    conditionSection => conditionSection !== section
+                return condition.filter(subCondition =>
+                    Object.keys(subCondition).every(
+                        conditionSection => conditionSection !== section
+                    )
                 );
             }
         );
+        if (preconditionsWithOrs.length < 1) {
+            return true;
+        }
         // TODO: improve how this reports a failed/successful test
-        if (preconditions.length > 0) {
-            const results = preconditions.map(precondition =>
+        const results = preconditionsWithOrs.map(preconditions => {
+            if (preconditions.length < 1) {
+                return true;
+            }
+            return preconditions.some(precondition =>
                 checkValid(section, template, precondition, roles)
             );
-            const unsatisfiedPreconditions = [];
-            results.forEach(precondition => {
-                if (precondition === false) {
-                    unsatisfiedPreconditions.push(
-                        preconditions[precondition.indexOf(precondition)]
-                    );
-                }
-            });
-            if (unsatisfiedPreconditions.length > 0) {
-                throw new Error(
-                    `Unsatisfiable route on /sections/${section}: \n ${JSON.stringify(
-                        unsatisfiedPreconditions,
-                        null,
-                        2
-                    )}`
-                );
+        });
+        const unsatisfiedPreconditions = [];
+        results.forEach(precondition => {
+            if (precondition === false) {
+                unsatisfiedPreconditions.push(preconditionsWithOrs[results.indexOf(precondition)]);
             }
+        });
+        if (unsatisfiedPreconditions.length > 0) {
+            throw new Error(
+                `Unsatisfiable route on /sections/${section}: \n ${JSON.stringify(
+                    unsatisfiedPreconditions,
+                    null,
+                    2
+                )}`
+            );
         }
         return true;
     });
@@ -426,6 +493,44 @@ function ensureAllConditionsAreSatisfiable(template) {
 //                         'q-applicant-infections': 'foo'
 //                     }
 //                 ]
+//             }
+//         }
+//     },
+//     routes: {
+//         states: {
+//             test: {
+//                 on: {
+//                     ANSWER: [
+//                         {
+//                             cond: [
+//                                 'or',
+//                                 [
+//                                     'and',
+//                                     ['|role.all', 'capable'],
+//                                     [
+//                                         '==',
+//                                         '$.answers.p-applicant-eu-citizen.q-applicant-eu-citizen',
+//                                         true
+//                                     ]
+//                                 ],
+//                                 [
+//                                     'and',
+//                                     ['|role.all', 'capable'],
+//                                     [
+//                                         '==',
+//                                         '$.answers.p-applicant-eu-citizen.q-applicant-eu-citizen',
+//                                         false
+//                                     ]
+//                                 ],
+//                                 [
+//                                     '==',
+//                                     '$.answers.p-applicant-eu-citizen.q-applicant-eu-test',
+//                                     false
+//                                 ]
+//                             ]
+//                         }
+//                     ]
+//                 }
 //             }
 //         }
 //     },
@@ -675,24 +780,24 @@ function ensureAllConditionsAreSatisfiable(template) {
 // const roles = getAllRoleDefinitions(template);
 // const r = expandConditionExpression(
 //     [
-//         'and',
-//         ['!=', '$.answers.p-applicant-infections.q-applicant-infections', 'yes'],
+//         'or',
 //         [
-//             'dateCompare',
-//             '$.answers.p-applicant-enter-your-date-of-birth.q-applicant-enter-your-date-of-birth', // this date ...
-//             '>', // is more than ...
-//             '-7', // 7 ...
-//             'years' // years (before, due to the negative (-7) ...
-//             // today's date (no second date given. defaults to today's date).
-//         ]
+//             'and',
+//             ['|role.all', 'capable'],
+//             ['==', '$.answers.p-applicant-eu-citizen.q-applicant-eu-citizen', true]
+//         ],
+//         [
+//             'and',
+//             ['|role.all', 'capable'],
+//             ['==', '$.answers.p-applicant-eu-citizen.q-applicant-eu-citizen', false]
+//         ],
+//         ['==', '$.answers.p-applicant-eu-citizen.q-applicant-eu-test', false]
 //     ],
-//     roles
+//     roles,
+//     false
 // );
 // const noOr = splitOrExpressions(r);
-// console.log(JSON.stringify(r, null, 2));
 // console.log(JSON.stringify(noOr, null, 2));
-// const newThing = collateNotEqualToConditions([noOr], template);
-// console.log('done');
-// console.log(JSON.stringify(newThing, null, 2));
-
+// const t = getSectionPreconditions('test', template, roles);
+// console.log(JSON.stringify(t, null, 2));
 module.exports = ensureAllConditionsAreSatisfiable;
