@@ -593,6 +593,39 @@ describe('ensureAllConditionsAreSatisfiable', () => {
             };
             expect(ensureAllConditionsAreSatisfiable(validTemplate)).toEqual(true);
         });
+        it('should return true if the only route to a target is unconditional, but there are other conditional routes', () => {
+            const validTemplate = {
+                routes: {
+                    initial: 'foo',
+                    states: {
+                        foo: {
+                            on: {
+                                ANSWER: [
+                                    {target: 'bar', cond: ['==', '$.answers.foo.q-foo', true]},
+                                    {target: 'baz', cond: ['==', '$.answers.foo.q-foo', false]},
+                                    {target: 'biz'}
+                                ]
+                            }
+                        },
+                        bar: {
+                            on: {
+                                ANSWER: [{target: 'baz'}]
+                            }
+                        },
+                        baz: {
+                            on: {
+                                ANSWER: [{target: 'biz'}]
+                            }
+                        },
+                        biz: {
+                            type: 'final'
+                        }
+                    }
+                },
+                attributes: rolesSchema.attributes
+            };
+            expect(ensureAllConditionsAreSatisfiable(validTemplate)).toEqual(true);
+        });
     });
     // need valid and invalid template for each question type
     // includes

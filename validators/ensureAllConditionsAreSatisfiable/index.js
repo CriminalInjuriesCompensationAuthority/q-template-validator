@@ -19,7 +19,6 @@ function matches(preconditionAnswer, routeAnswer) {
             return preconditionAnswer.value.some(answer => routeAnswer.value.includes(answer));
         }
         // this catches conditions where the route/precondition is a != and the other is an ==
-        console.log(preconditionAnswer);
         return (
             preconditionAnswer.value.includes(routeAnswer.value) ||
             routeAnswer.value.includes(preconditionAnswer.value)
@@ -45,7 +44,7 @@ function matches(preconditionAnswer, routeAnswer) {
 }
 
 function satisfies(precondition, route) {
-    // Precondition and route are both answers objects
+    // Precondition and route are both objects of the form {page:{question:{type, value}}} with as many pages as desired
     // if a precondition satisfies the route completely return 'full'
     // if a precondition satisfies the route assuming other questions have some value return 'partial'
     // if a precondition doesn't satisfy a route return 'none'
@@ -75,6 +74,7 @@ function satisfies(precondition, route) {
 }
 
 function getAllRoleDefinitions(template) {
+    // Return all the role definitions from the template, along with a complexity tag stating whether or not they contain an 'or'
     const roles = template.attributes.q__roles;
     const roleDefinitions = {};
     Object.keys(roles).forEach(role => {
@@ -89,7 +89,8 @@ function getAllRoleDefinitions(template) {
 }
 
 function getPreviousSections(section, template) {
-    // TODO: we may want to add the ability to skip certain sections here, e.g. injury sections
+    // Given a section, return all sections in the template that have a route to it
+    // TODO: we may want to add the ability to skip certain sections here, e.g. injury sections or up to a task etc.
     const {states} = template.routes;
     const previousSections = [];
     Object.keys(states).forEach(state => {
@@ -103,10 +104,10 @@ function getPreviousSections(section, template) {
 }
 
 function setSimpleCondition(condition) {
+    // Given a single condition (no and/or/|role.all) convert it to an object that can be compared in the matches function
     // TODO: Currently, all datecompares in the template are based on today's date and time differences of years before now. That is assumed to be the case here.
     // going forwards all this logic should be handled by an equivalent version of q-expressions/JSON-rules that sets instead of evaluating
     if (condition[0] === 'includes') {
-        // TODO: This currently only works for single item inclusivity checks, need to check if that is ok
         const answers = {};
         const page = condition[1].split('.')[2];
         const question = condition[1].split('.')[3];
@@ -115,7 +116,6 @@ function setSimpleCondition(condition) {
         return answers;
     }
     if (condition[0] === 'dateCompare') {
-        // going forwards, we could replace this logic to have the answers object be {page-id:{question-id:{type:x, value:y}}}
         const answers = {};
         const page = condition[1].split('.')[2];
         const question = condition[1].split('.')[3];
@@ -131,18 +131,19 @@ function setSimpleCondition(condition) {
     }
     if (condition[0] === 'dateDifferenceGreaterThanTwoDays') {
         const answers = {};
-        // TODO: make this work
+        // TODO: unimplemented, currently will always validate any questions of this type
         const oldPage = condition[2].split('.')[2];
         const oldQuestion = condition[2].split('.')[3];
         const newPage = condition[1].split('.')[2];
         const newQuestion = condition[1].split('.')[3];
         answers[oldPage] = {};
-        answers[oldPage][oldQuestion] = Date.now() - 50 * 3600 * 1000;
+        answers[oldPage][oldQuestion] = '-2';
         answers[newPage] = {};
-        answers[newPage][newQuestion] = Date.now();
+        answers[newPage][newQuestion] = '0';
         return answers;
     }
     if (condition[0] === '!=') {
+        // != conditions are handled by a separate function to ensure all possible values are caught
         const answers = {};
         const page = `${condition[1].split('.')[2]}!=${condition[1].split('.')[3]}!=${
             condition[2]
@@ -158,13 +159,16 @@ function setSimpleCondition(condition) {
         answers[page][question] = {type: condition[0], value: condition[2]};
         return answers;
     }
-    // handle any unsimplified roles
+    // handle any unsimplified complex roles later
     const answers = {};
     answers[condition] = 'role';
     return answers;
 }
 
 function expandConditionExpression(condition, roles, expandComplexRoles) {
+    // Given a condition expression expand it into answers and their types
+    // If expandComplexRoles is set to true it will expand roles that have OR conditions in them (this allows checking all possibilities on earlier page routes)
+    // If expandComplexRoles is set to false it will not expand roles that have OR conditions in them (this allows setting up the preconditions properly)
     if (condition[0] === 'or') {
         const conditionValues = condition.slice(1);
         const expandedExpression = conditionValues.map(subCondition => {
@@ -211,7 +215,6 @@ function splitOrExpressions(expression) {
 function collateNotEqualToConditions(preconditions, template) {
     // use template to get all possible values to a question. then remove any referenced by the != question leaving an array of allowed values
     const newPreconditions = [];
-    console.log(template);
     preconditions.forEach(precondition => {
         const newPrecondition = {};
         Object.keys(precondition).forEach(page => {
@@ -244,6 +247,7 @@ function collateNotEqualToConditions(preconditions, template) {
 }
 
 function getSectionPreconditions(section, template, roles) {
+    // Given a section of the template, get all the routes off that page and convert them into precondition answers objects that can be compared
     if (template.routes.states[section].type === 'final') {
         // final states lead to no other states
         return [];
@@ -277,9 +281,7 @@ function getSectionPreconditions(section, template, roles) {
             }
         });
         if (newCondition.or) {
-            // TODO: if there are issues in more complex or scenarios they are likely caused by either this if statement or the splitOrExpressionsFunction
-            // For some reason if the complex role is expanded above splitOrExpressions returns an array that is one too deep, hence the if statement
-            // This is likely to do with needing the flat(infinity) earlier
+            // TODO: if the complex role is expanded above splitOrExpressions returns an array that is one deeper than it would otherwise be
             return splitOrExpressions(newCondition);
         }
         return [newCondition];
@@ -303,7 +305,10 @@ function getSectionPreconditions(section, template, roles) {
 }
 
 function checkSatisfiability(section, template, precondition, targetSection, roles) {
-    // needs to return the modified precondition if part of it has been shown to work, false if it has failed and the precondition otherwise
+    // Given a section of the template, a target to route to and some precondition, check whether any route to the target would be satisfied by that precondition
+    // If the precondition does not cause the section to route to the target (e.g. a direct contradiction, routing hits a route to a different section instead) return false
+    // If evaluating the precondition to true guarantees routing to the target return an empty object
+    // If evaluating the precondition to true routes to the target given some other evaluation, return the precondition with any references to this section removed
     const newPrecondition = {...precondition};
     const conditionalRoutes = template.routes.states[section].on.ANSWER.filter(route => route.cond);
 
@@ -317,6 +322,14 @@ function checkSatisfiability(section, template, precondition, targetSection, rol
         .map(route => route.target)
         .indexOf(targetSection);
 
+    if (targetConditionIndex === -1) {
+        // if the route to the target is the default route, ensure all other routes are not satisfied by the precondition
+        if (conditionalRoutes.some(route => satisfies(newPrecondition, route, roles) === 'full')) {
+            return false;
+        }
+        return true;
+    }
+
     const routeToTarget = conditionalRoutes[targetConditionIndex];
 
     // going from top to bottom until you hit the target in the conditions, if a precondition matches but goes to a different page then it is invalid
@@ -329,14 +342,14 @@ function checkSatisfiability(section, template, precondition, targetSection, rol
         }
     }
 
-    // after this will need changing once the roles stuff has changed - maybe just have a flag for full expansion in the expand function
+    // Convert the route to the target to the same form as the precondition to make checking satisfiability easier
+    // This returns an array as there may be multiple routes to the target (in the form of OR conditions)
     const splitRoutesToTarget = collateNotEqualToConditions(
         [splitOrExpressions(expandConditionExpression(routeToTarget.cond, roles, true))].flat(
             Infinity
         ),
         template
     );
-    // the above is now a list of 'answers' objects.
 
     const satisfiedRoutesToTarget = splitRoutesToTarget.map(route =>
         satisfies(newPrecondition, route)
@@ -347,7 +360,7 @@ function checkSatisfiability(section, template, precondition, targetSection, rol
         return {};
     }
     if (satisfiedRoutesToTarget.every(satisfaction => satisfaction === 'none')) {
-        // if there is a direct conflict between route and precondition it is invalid(i.e. assuming all sections not in the precondition evaluate as the route requires, given the precondition the route evaluates to false)
+        // if there is a direct conflict between route and precondition it is invalid (i.e. assuming all sections not in the precondition evaluate as the route requires, given the precondition the route evaluates to false)
         return false;
     }
     // then if the precondition only references this page and it hasn't already been marked as satisfied then it is valid
@@ -357,7 +370,12 @@ function checkSatisfiability(section, template, precondition, targetSection, rol
 }
 
 function checkValid(targetSection, template, precondition, roles) {
-    // TODO: if we hit the start of the application but still have preconditions then is something wrong or is it invalid? not sure but probably something wrong
+    // Given a section to route to and a precondition assumed true, recursively move backwards through the application
+    // Keep recursing until either:
+    // the precondition has been shown to not route to the target via all possible routes
+    // or all subconditions of the precondition have been shown to be satisfiable
+
+    // TODO: if we hit the start of the application but still have preconditions then something has gone wrong
     const previousSections = getPreviousSections(targetSection, template);
     const valid = previousSections.some(section => {
         const satisfiability = checkSatisfiability(
@@ -376,12 +394,11 @@ function checkValid(targetSection, template, precondition, roles) {
         return checkValid(section, template, satisfiability, roles);
     });
     return valid;
-    // We could make this non-recursive using a queue/stack and then that might make identifying errors easier
-    // Although would it? my initial thought was it might make it easier to see at which particular point the route breaks, but
-    // given there are multiple different routes for a precondition this might not help much
+    // TODO: could make this non-recursive using a queue/stack and then that might make identifying errors easier
 }
 
 function ensureAllConditionsAreSatisfiable(template) {
+    // Loop through all sections in the template and check all the routes that go from each section are satisfiable
     const roles = getAllRoleDefinitions(template);
     const result = Object.keys(template.routes.states).every(section => {
         const preconditionsWithOrs = getSectionPreconditions(section, template, roles).map(
@@ -395,11 +412,16 @@ function ensureAllConditionsAreSatisfiable(template) {
             }
         );
         if (preconditionsWithOrs.length < 1) {
+            // If there are no preconditions they are always satisfiable
             return true;
         }
         // TODO: improve how this reports a failed/successful test
         const results = preconditionsWithOrs.map(preconditions => {
+            // If a precondition contains an OR not in a role that is split into distinct preconditions because we want both options to be satisfiable
+            // However, if the OR is within a role there are scenarios (e.g. the rep role) in which the distinct blocks within the OR are contradictions of each other
+            // Because of this, each precondition is an array of objects (most of which end up being of length 1) only one of which needs to be satisfiable
             if (preconditions.length < 1) {
+                // If there are no preconditions they are always satisfiable
                 return true;
             }
             return preconditions.some(precondition =>
@@ -426,378 +448,4 @@ function ensureAllConditionsAreSatisfiable(template) {
     return result;
 }
 
-// might need to reconsider ors, specifically for roles. for roles some of them probably are unreachable so we may need to do the ors as a proper or
-// for the preconditions this is likely the case. for the routes i think it works fine as is because we do a some not an every
-// we can potentially do this by doing the preconditions a bit differently and managing the ors at that high level? Specifically, ors within a
-// precondition are fine - these should all be satisfiable. But the ors within roles may not be
-// may need to rejig ordering of deconstruction - do roles last so that we can keep them grouped
-// first split ands and ors and any roles that don't have an or as we are currently
-// then replace remaining roles with conditions
-// then replace as before but keep the ors in an array or something
-// then when looping over preconditions we can do a some for the ones with ors in
-// this would also make error reporting clearer (maybe?)
-
-// const template = {
-//     sections: {
-//         'p-applicant-infections': {
-//             schema: {
-//                 $schema: 'http://json-schema.org/draft-07/schema#',
-//                 type: 'object',
-//                 required: ['q-applicant-infections'],
-//                 additionalProperties: false,
-//                 properties: {
-//                     'q-applicant-infections': {
-//                         type: 'string',
-//                         title: 'l10nt:q-applicant-infections.title{?lng,context,ns}',
-//                         oneOf: [
-//                             {
-//                                 title: 'Yes',
-//                                 const: 'yes'
-//                             },
-//                             {
-//                                 title: 'No',
-//                                 const: 'no'
-//                             },
-//                             {
-//                                 title: "I'm not sure",
-//                                 const: 'not-sure'
-//                             }
-//                         ],
-//                         meta: {
-//                             classifications: {
-//                                 theme: 'injuries'
-//                             },
-//                             summary: {
-//                                 title:
-//                                     'l10nt:q-applicant-infections.meta.summary.title{?lng,context,ns}'
-//                             }
-//                         }
-//                     }
-//                 },
-//                 errorMessage: {
-//                     required: {
-//                         'q-applicant-infections':
-//                             'l10nt:q-applicant-infections.error.required{?lng,context,ns}'
-//                     }
-//                 },
-//                 examples: [
-//                     {
-//                         'q-applicant-infections': 'yes'
-//                     },
-//                     {
-//                         'q-applicant-infections': 'no'
-//                     }
-//                 ],
-//                 invalidExamples: [
-//                     {
-//                         'q-applicant-infections': 'foo'
-//                     }
-//                 ]
-//             }
-//         }
-//     },
-//     routes: {
-//         states: {
-//             test: {
-//                 on: {
-//                     ANSWER: [
-//                         {
-//                             cond: [
-//                                 'or',
-//                                 [
-//                                     'and',
-//                                     ['|role.all', 'capable'],
-//                                     [
-//                                         '==',
-//                                         '$.answers.p-applicant-eu-citizen.q-applicant-eu-citizen',
-//                                         true
-//                                     ]
-//                                 ],
-//                                 [
-//                                     'and',
-//                                     ['|role.all', 'capable'],
-//                                     [
-//                                         '==',
-//                                         '$.answers.p-applicant-eu-citizen.q-applicant-eu-citizen',
-//                                         false
-//                                     ]
-//                                 ],
-//                                 [
-//                                     '==',
-//                                     '$.answers.p-applicant-eu-citizen.q-applicant-eu-test',
-//                                     false
-//                                 ]
-//                             ]
-//                         }
-//                     ]
-//                 }
-//             }
-//         }
-//     },
-//     attributes: {
-//         q__roles: {
-//             proxy: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'A type of proxy for the applicant e.g. mainapplicant, rep',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['==',
-//                 '$.answers.p-applicant-who-are-you-applying-for.q-applicant-who-are-you-applying-for',
-//                 'someone-else'
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             myself: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'Myself journey role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['==',
-//                 '$.answers.p-applicant-who-are-you-applying-for.q-applicant-who-are-you-applying-for',
-//                 'myself'
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             child: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'Child applicant role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['==',
-//             '$.answers.p-applicant-are-you-18-or-over.q-applicant-are-you-18-or-over',
-//             false
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             adult: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'Adult applicant role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['==',
-//             '$.answers.p-applicant-are-you-18-or-over.q-applicant-are-you-18-or-over',
-//             true
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             mainapplicant: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'Main Applicant role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['or',
-//                 ['==', '$.answers.p-mainapplicant-parent.q-mainapplicant-parent', true],
-//                 ['==', '$.answers.p--has-legal-authority.q--has-legal-authority', true]
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             rep: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'Rep role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['or',
-//                 [
-//                     'and',
-//                     ['==', '$.answers.p-applicant-who-are-you-applying-for.q-applicant-who-are-you-applying-for', 'someone-else'],
-//                     ['==', '$.answers.p-applicant-are-you-18-or-over.q-applicant-are-you-18-or-over', false],
-//                     ['==', '$.answers.p-mainapplicant-parent.q-mainapplicant-parent', false],
-//                     ['==', '$.answers.p--has-legal-authority.q--has-legal-authority', false]
-//                 ],
-//                 [
-//                     'and',
-//                     ['==', '$.answers.p-applicant-who-are-you-applying-for.q-applicant-who-are-you-applying-for', 'someone-else'],
-//                     ['==', '$.answers.p-applicant-are-you-18-or-over.q-applicant-are-you-18-or-over', true],
-//                     ['==', '$.answers.p--has-legal-authority.q--has-legal-authority', false],
-//                     ['==', '$.answers.p--represents-legal-authority.q--represents-legal-authority', true]
-//                 ],
-//                 [
-//                     'and',
-//                     ['==', '$.answers.p-applicant-who-are-you-applying-for.q-applicant-who-are-you-applying-for', 'someone-else'],
-//                     ['==', '$.answers.p-applicant-are-you-18-or-over.q-applicant-are-you-18-or-over', true],
-//                     ['==', '$.answers.p--has-legal-authority.q--has-legal-authority', false],
-//                     ['==', '$.answers.p--represents-legal-authority.q--represents-legal-authority', false]
-//                 ],
-//                 [
-//                     'and',
-//                     ['==', '$.answers.p-applicant-who-are-you-applying-for.q-applicant-who-are-you-applying-for', 'someone-else'],
-//                     ['==', '$.answers.p-applicant-are-you-18-or-over.q-applicant-are-you-18-or-over', true],
-//                     ['==', '$.answers.p-applicant-can-handle-affairs.q-applicant-capable', true]
-//                 ]
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             noauthority: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'no authority role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const:
-//                 ['and',
-//                     ['==', '$.answers.p-applicant-are-you-18-or-over.q-applicant-are-you-18-or-over', true],
-//                     ['==', '$.answers.p-applicant-can-handle-affairs.q-applicant-capable', false],
-//                     ['==', '$.answers.p--has-legal-authority.q--has-legal-authority', false],
-//                     ['==', '$.answers.p--represents-legal-authority.q--represents-legal-authority', false]
-//                 ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             incapable: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'incapable role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const:  ['==', '$.answers.p-applicant-can-handle-affairs.q-applicant-capable', false],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             capable: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'capable role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['or',
-//                 ['==', '$.answers.p-applicant-can-handle-affairs.q-applicant-capable', true],
-//                 ['==', '$.answers.p-applicant-who-are-you-applying-for.q-applicant-who-are-you-applying-for', 'myself']
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             authority: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'Legal authority role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['or',
-//                 ['==', '$.answers.p--has-legal-authority.q--has-legal-authority', true],
-//                 ['==', '$.answers.p--represents-legal-authority.q--represents-legal-authority', true]
-//             ],
-//                     examples: [true, false],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             deceased: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'Deceased role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['==', '$.answers.p-applicant-fatal-claim.q-applicant-fatal-claim', true],
-//                     examples: [true, false],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             nonDeceased: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'Non Deceased journey role',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['==', '$.answers.p-applicant-fatal-claim.q-applicant-fatal-claim', false],
-//                     examples: [true, false],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             childUnder12: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'child under the age of 12',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: [
-//                 'dateCompare',
-//                 '$.answers.p-applicant-enter-your-date-of-birth.q-applicant-enter-your-date-of-birth', // this date ...
-//                 '<', // is less than ...
-//                 '-12', // 12 ...
-//                 'years' // years (before, due to the negative (-12) ...
-//                 // today's date (no second date given. defaults to today's date).
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             childOver12: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'child over the age of 12',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const:   [
-//                 'dateCompare',
-//                 '$.answers.p-applicant-enter-your-date-of-birth.q-applicant-enter-your-date-of-birth', // this date ...
-//                 '>=', // is greater than or equeal too ...
-//                 '-12', // 12 ...
-//                 'years' // years (before, due to the negative (-12) ...
-//                 // today's date (no second date given. defaults to today's date).
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             },
-//             noContactMethod: {
-//                 schema: {
-//                     $schema: 'http://json-schema.org/draft-07/schema#',
-//                     title: 'has no email or text contact method',
-//                     type: 'boolean',
-//                     // prettier-ignore
-//                     const: ['or',
-//                 ['==', '$.answers.p-applicant-confirmation-method.q-applicant-confirmation-method', 'none'],
-//                 ['==', '$.answers.p-mainapplicant-confirmation-method.q-mainapplicant-confirmation-method', 'none'],
-//                 ['==', '$.answers.p-rep-confirmation-method.q-rep-confirmation-method', 'none']
-//             ],
-//                     examples: [{}],
-//                     invalidExamples: [{}]
-//                 }
-//             }
-//         }
-//     }
-// };
-// const roles = getAllRoleDefinitions(template);
-// const r = expandConditionExpression(
-//     [
-//         'or',
-//         [
-//             'and',
-//             ['|role.all', 'capable'],
-//             ['==', '$.answers.p-applicant-eu-citizen.q-applicant-eu-citizen', true]
-//         ],
-//         [
-//             'and',
-//             ['|role.all', 'capable'],
-//             ['==', '$.answers.p-applicant-eu-citizen.q-applicant-eu-citizen', false]
-//         ],
-//         ['==', '$.answers.p-applicant-eu-citizen.q-applicant-eu-test', false]
-//     ],
-//     roles,
-//     false
-// );
-// const noOr = splitOrExpressions(r);
-// console.log(JSON.stringify(noOr, null, 2));
-// const t = getSectionPreconditions('test', template, roles);
-// console.log(JSON.stringify(t, null, 2));
 module.exports = ensureAllConditionsAreSatisfiable;
