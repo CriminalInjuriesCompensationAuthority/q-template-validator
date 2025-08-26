@@ -298,7 +298,13 @@ function createQuestionnaireTemplateHelper({
     function ensureAllSectionsHaveThemes() {
         const errors = Object.keys(sections).reduce((acc, sectionId) => {
             if (
-                ['system', 'p--check-your-answers', 'owner', 'origin'].includes(sectionId) === false
+                [
+                    'system',
+                    'p--check-your-answers',
+                    'owner',
+                    'origin',
+                    'p--review-check-your-answers'
+                ].includes(sectionId) === false
             ) {
                 const sectionSchema = sections[sectionId].schema;
 
