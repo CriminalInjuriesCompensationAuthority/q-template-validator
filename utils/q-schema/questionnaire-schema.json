@@ -484,6 +484,51 @@
                 "currentSectionId": {
                     "$ref": "#/oneOf/1/definitions/state"
                 },
+                "answers": {},
+                "onCreate": {
+                    "type": "object",
+                    "required": ["id", "type", "retries", "data"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "id": {
+                            "type": "string"
+                        },
+                        "type": {
+                            "enum": ["sequential", "parallel"]
+                        },
+                        "retries": {
+                            "type": "integer"
+                        },
+                        "data": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["id", "type", "retries", "data"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "id": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    },
+                                    "retries": {
+                                        "type": "integer"
+                                    },
+                                    "data": {
+                                        "type": "object",
+                                        "required": ["logger"],
+                                        "properties": {
+                                            "logger": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "onSubmit": {
                     "type": "object",
                     "required": ["id", "type", "retries", "data"],
@@ -592,6 +637,22 @@
                                 }
                             }
                         }
+                    }
+                },
+                "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "required": ["$id", "$schema", "type", "required", "properties"],
+                    "properties": {
+                        "$id": {"type": "string"},
+                        "$schema": {"const": "http://json-schema.org/draft-07/schema#"},
+                        "type": {"const": "object"},
+                        "additionalProperties": {"const": false},
+                        "required": {"type": "array"},
+                        "properties": {
+                            "type": "object"
+                        },
+                        "allOf": {"type": "array"}
                     }
                 }
             },
