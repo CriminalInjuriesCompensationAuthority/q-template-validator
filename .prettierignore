@@ -1,0 +1,10 @@
+# Large test fixtures
+/fixtures/
+/utils/q-schema/fixtures/
+
+# Generated dependency lockfile
+/package-lock.json
+
+# Generated output
+/coverage/
+/dist/

@@ -1,5 +1,8 @@
 'use strict';
 
+const assert = require('node:assert/strict');
+const {describe, it} = require('node:test');
+
 const getDupicateSections = require('./index');
 
 describe('getDuplicateSections', () => {
@@ -10,25 +13,26 @@ describe('getDuplicateSections', () => {
                 ['c', 'd', 'e'],
                 ['f', 'g', 'h'],
                 ['i', 'j', 'k'],
-                ['k', 'l']
+                ['k', 'l'],
             ];
 
             const actual = getDupicateSections(sections);
 
-            expect(actual).toEqual(['c', 'k']);
+            assert.deepStrictEqual(actual, ['c', 'k']);
         });
+
         it('should return an empty array if there are no duplicate sectionIds', () => {
             const sections = [
                 ['a', 'b', 'c'],
                 ['d', 'e', 'f'],
                 ['g', 'h', 'i'],
                 ['j', 'k', 'l'],
-                ['m', 'n']
+                ['m', 'n'],
             ];
 
             const actual = getDupicateSections(sections);
 
-            expect(actual).toEqual([]);
+            assert.deepStrictEqual(actual, []);
         });
     });
 });

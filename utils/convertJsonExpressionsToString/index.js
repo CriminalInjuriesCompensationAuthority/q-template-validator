@@ -11,7 +11,6 @@ function isPlainObjectOrArray(value) {
 function mutateObjectValues(value, valueTransformers, key) {
     if (isPlainObjectOrArray(value)) {
         Object.entries(value).forEach(([k, v]) => {
-            // eslint-disable-next-line no-param-reassign
             value[k] = mutateObjectValues(v, valueTransformers, k);
         });
 
@@ -33,7 +32,7 @@ function convertJsonExpressionsToString(sectionSchema) {
             }
 
             return value;
-        }
+        },
     ]);
 }
 

@@ -23,8 +23,8 @@ console.log(output);
 function findDuplicates(objects) {
     const valueCount = new Map();
 
-    objects.forEach(subArray => {
-        subArray.forEach(value => {
+    objects.forEach((subArray) => {
+        subArray.forEach((value) => {
             if (valueCount.has(value)) {
                 valueCount.set(value, valueCount.get(value) + 1);
             } else {

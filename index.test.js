@@ -1,10 +1,24 @@
 'use strict';
 
+const assert = require('node:assert/strict');
+const {describe, it} = require('node:test');
+const {isDeepStrictEqual} = require('node:util');
+
 const ajvFormatsMobileUk = require('ajv-formats-mobile-uk');
 const createQuestionnaireTemplateHelper = require('./index');
 const validQTemplate = require('./fixtures/valid-questionnaire-template');
 const validParallelTemplate = require('./fixtures/valid-parallel-template');
 const schema = require('./utils/q-schema');
+
+function assertContainsDeep(actual, expected) {
+    assert.ok(Array.isArray(actual), 'Expected an array');
+    expected.forEach((expectedItem) => {
+        assert.ok(
+            actual.some((actualItem) => isDeepStrictEqual(actualItem, expectedItem)),
+            `Expected array to contain ${JSON.stringify(expectedItem)}`,
+        );
+    });
+}
 
 function getValidQuestionnaireTemplate() {
     return JSON.parse(JSON.stringify(validQTemplate));
@@ -22,21 +36,21 @@ describe('q-template-validator', () => {
         const qHelper = createQuestionnaireTemplateHelper({
             questionnaireTemplate: validTemplate,
             customSchemaFormats: {
-                'mobile-uk': dummyFormatFunctionAlwaysPassesValidation
-            }
+                'mobile-uk': dummyFormatFunctionAlwaysPassesValidation,
+            },
         });
 
-        expect(qHelper.validateTemplate()).toEqual(true);
+        assert.deepStrictEqual(qHelper.validateTemplate(), true);
     });
 
     describe('isValidQuestionnaireDocument', () => {
         it("should return true if the template's document structure is correct", () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
             });
 
-            expect(qHelper.isValidDocument()).toEqual(true);
+            assert.deepStrictEqual(qHelper.isValidDocument(), true);
         });
 
         it("should return an error if the template's document structure is incorrect", () => {
@@ -48,28 +62,26 @@ describe('q-template-validator', () => {
             delete invalidTemplate.version;
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
             });
             const error = qHelper.isValidDocument();
 
-            expect(error.description).toEqual(
-                expect.arrayContaining([
-                    {
-                        dataPath: '',
-                        keyword: 'required',
-                        message: "should have required property 'type'",
-                        params: {missingProperty: 'type'},
-                        schemaPath: '#/oneOf/0/required'
-                    },
-                    {
-                        dataPath: '',
-                        keyword: 'required',
-                        message: "should have required property 'version'",
-                        params: {missingProperty: 'version'},
-                        schemaPath: '#/oneOf/0/required'
-                    }
-                ])
-            );
+            assertContainsDeep(error.description, [
+                {
+                    dataPath: '',
+                    keyword: 'required',
+                    message: "should have required property 'type'",
+                    params: {missingProperty: 'type'},
+                    schemaPath: '#/oneOf/0/required',
+                },
+                {
+                    dataPath: '',
+                    keyword: 'required',
+                    message: "should have required property 'version'",
+                    params: {missingProperty: 'version'},
+                    schemaPath: '#/oneOf/0/required',
+                },
+            ]);
         });
     });
 
@@ -77,10 +89,10 @@ describe('q-template-validator', () => {
         it('should return true if all sections have a corresponding route', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
             });
 
-            expect(qHelper.ensureAllSectionsHaveCorrespondingRoute()).toEqual(true);
+            assert.deepStrictEqual(qHelper.ensureAllSectionsHaveCorrespondingRoute(), true);
         });
 
         it('should return an error for each section that has no corresponding route', () => {
@@ -93,30 +105,28 @@ describe('q-template-validator', () => {
             delete invalidTemplate.routes.states.system;
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
             });
             const errors = qHelper.ensureAllSectionsHaveCorrespondingRoute();
 
-            expect(errors).toEqual(
-                expect.arrayContaining([
-                    {
-                        type: 'RouteNotFound',
-                        source: '/sections/p-applicant-british-citizen-or-eu-national',
-                        description:
-                            "Route '/routes/states/p-applicant-british-citizen-or-eu-national' not found"
-                    },
-                    {
-                        type: 'RouteNotFound',
-                        source: '/sections/p--confirmation',
-                        description: "Route '/routes/states/p--confirmation' not found"
-                    },
-                    {
-                        type: 'RouteNotFound',
-                        source: '/sections/system',
-                        description: "Route '/routes/states/system' not found"
-                    }
-                ])
-            );
+            assertContainsDeep(errors, [
+                {
+                    type: 'RouteNotFound',
+                    source: '/sections/p-applicant-british-citizen-or-eu-national',
+                    description:
+                        "Route '/routes/states/p-applicant-british-citizen-or-eu-national' not found",
+                },
+                {
+                    type: 'RouteNotFound',
+                    source: '/sections/p--confirmation',
+                    description: "Route '/routes/states/p--confirmation' not found",
+                },
+                {
+                    type: 'RouteNotFound',
+                    source: '/sections/system',
+                    description: "Route '/routes/states/system' not found",
+                },
+            ]);
         });
     });
 
@@ -124,10 +134,10 @@ describe('q-template-validator', () => {
         it('should return true if all routes have a corresponding section', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
             });
 
-            expect(qHelper.ensureAllRoutesHaveCorrespondingSection()).toEqual(true);
+            assert.deepStrictEqual(qHelper.ensureAllRoutesHaveCorrespondingSection(), true);
         });
 
         it('should return an error for each route that has no corresponding section', () => {
@@ -139,25 +149,23 @@ describe('q-template-validator', () => {
             delete invalidTemplate.sections['p-applicant-british-citizen-or-eu-national'];
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
             });
             const errors = qHelper.ensureAllRoutesHaveCorrespondingSection();
 
-            expect(errors).toEqual(
-                expect.arrayContaining([
-                    {
-                        type: 'SectionNotFound',
-                        source: '/routes/states/p-applicant-declaration',
-                        description: "Section '/sections/p-applicant-declaration' not found"
-                    },
-                    {
-                        type: 'SectionNotFound',
-                        source: '/routes/states/p-applicant-british-citizen-or-eu-national',
-                        description:
-                            "Section '/sections/p-applicant-british-citizen-or-eu-national' not found"
-                    }
-                ])
-            );
+            assertContainsDeep(errors, [
+                {
+                    type: 'SectionNotFound',
+                    source: '/routes/states/p-applicant-declaration',
+                    description: "Section '/sections/p-applicant-declaration' not found",
+                },
+                {
+                    type: 'SectionNotFound',
+                    source: '/routes/states/p-applicant-british-citizen-or-eu-national',
+                    description:
+                        "Section '/sections/p-applicant-british-citizen-or-eu-national' not found",
+                },
+            ]);
         });
     });
 
@@ -165,10 +173,10 @@ describe('q-template-validator', () => {
         it('should return true if the "initial" route has a corresponding state', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
             });
 
-            expect(qHelper.ensureInitialRouteExists()).toEqual(true);
+            assert.deepStrictEqual(qHelper.ensureInitialRouteExists(), true);
         });
 
         it('should return an error if the "initial" route has no corresponding state', () => {
@@ -179,14 +187,14 @@ describe('q-template-validator', () => {
             delete invalidTemplate.routes.states['p-applicant-fatal-claim'];
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
             });
             const error = qHelper.ensureInitialRouteExists();
 
-            expect(error).toEqual({
+            assert.deepStrictEqual(error, {
                 type: 'RouteNotFound',
                 source: '/routes/initial',
-                description: "Route '/routes/states/p-applicant-fatal-claim' not found"
+                description: "Route '/routes/states/p-applicant-fatal-claim' not found",
             });
         });
     });
@@ -195,10 +203,10 @@ describe('q-template-validator', () => {
         it('should return true if the "summary" route has a corresponding state', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
             });
 
-            expect(qHelper.ensureSummaryRouteExists()).toEqual(true);
+            assert.deepStrictEqual(qHelper.ensureSummaryRouteExists(), true);
         });
 
         it('should return an error if the "summary" route has no corresponding state', () => {
@@ -209,17 +217,17 @@ describe('q-template-validator', () => {
             delete invalidTemplate.routes.states['p-mainapplicant-declaration-under-12'];
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
             });
             const error = qHelper.ensureSummaryRouteExists();
 
-            expect(error).toEqual([
+            assert.deepStrictEqual(error, [
                 {
                     type: 'RouteNotFound',
                     source: '/routes/summary',
                     description:
-                        "Route '/routes/states/p-mainapplicant-declaration-under-12' not found"
-                }
+                        "Route '/routes/states/p-mainapplicant-declaration-under-12' not found",
+                },
             ]);
         });
     });
@@ -228,10 +236,10 @@ describe('q-template-validator', () => {
         it('should return true if the "confirmation" route has a corresponding state', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
             });
 
-            expect(qHelper.ensureConfirmationRouteExists()).toEqual(true);
+            assert.deepStrictEqual(qHelper.ensureConfirmationRouteExists(), true);
         });
 
         it('should return an error if the "confirmation" route has no corresponding state', () => {
@@ -242,14 +250,14 @@ describe('q-template-validator', () => {
             delete invalidTemplate.routes.states['p--confirmation'];
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
             });
             const error = qHelper.ensureConfirmationRouteExists();
 
-            expect(error).toEqual({
+            assert.deepStrictEqual(error, {
                 type: 'RouteNotFound',
                 source: '/routes/confirmation',
-                description: "Route '/routes/states/p--confirmation' not found"
+                description: "Route '/routes/states/p--confirmation' not found",
             });
         });
     });
@@ -258,10 +266,10 @@ describe('q-template-validator', () => {
         it('should return true if all state targets have a corresponding section', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
             });
 
-            expect(qHelper.ensureRouteTargetsHaveCorrespondingState()).toEqual(true);
+            assert.deepStrictEqual(qHelper.ensureRouteTargetsHaveCorrespondingState(), true);
         });
 
         it('should return an error for each target that has no corresponding state', () => {
@@ -273,47 +281,45 @@ describe('q-template-validator', () => {
             delete invalidTemplate.routes.states['p--transition'];
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
             });
             const errors = qHelper.ensureRouteTargetsHaveCorrespondingState();
             const expectedErrors = [
                 {
                     type: 'TargetNotFound',
-                    source:
-                        '/routes/states/p-offender-do-you-know-the-name-of-the-offender/on/ANSWER/1/target',
-                    description: "Target '/routes/states/p-offender-enter-offenders-name' not found"
+                    source: '/routes/states/p-offender-do-you-know-the-name-of-the-offender/on/ANSWER/1/target',
+                    description:
+                        "Target '/routes/states/p-offender-enter-offenders-name' not found",
                 },
                 {
                     type: 'TargetNotFound',
-                    source:
-                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/target',
-                    description: "Target '/routes/states/p--transition' not found"
+                    source: '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/target',
+                    description: "Target '/routes/states/p--transition' not found",
                 },
                 {
                     type: 'TargetNotFound',
                     source: '/routes/states/p-applicant-are-you-18-or-over/on/ANSWER/0/target',
-                    description: "Target '/routes/states/p--transition' not found"
+                    description: "Target '/routes/states/p--transition' not found",
                 },
                 {
                     type: 'TargetNotFound',
-                    source:
-                        '/routes/states/p-applicant-enter-your-date-of-birth/on/ANSWER/0/target',
-                    description: "Target '/routes/states/p--transition' not found"
+                    source: '/routes/states/p-applicant-enter-your-date-of-birth/on/ANSWER/0/target',
+                    description: "Target '/routes/states/p--transition' not found",
                 },
                 {
                     type: 'TargetNotFound',
                     source: '/routes/states/p-mainapplicant-parent/on/ANSWER/0/target',
-                    description: "Target '/routes/states/p--transition' not found"
+                    description: "Target '/routes/states/p--transition' not found",
                 },
                 {
                     type: 'TargetNotFound',
                     source: '/routes/states/p-applicant-fatal-claim/on/ANSWER/0/target',
-                    description: "Target '/routes/states/p--transition' not found"
-                }
+                    description: "Target '/routes/states/p--transition' not found",
+                },
             ];
 
-            expect(errors.length).toEqual(expectedErrors.length);
-            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
+            assert.deepStrictEqual(errors.length, expectedErrors.length);
+            expectedErrors.forEach((expectedError) => assertContainsDeep(errors, [expectedError]));
         });
     });
 
@@ -321,11 +327,12 @@ describe('q-template-validator', () => {
         it('should return true if all state condition data references have a corresponding question', () => {
             const validTemplate = getValidQuestionnaireTemplate();
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: validTemplate
+                questionnaireTemplate: validTemplate,
             });
 
-            expect(qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion()).toEqual(
-                true
+            assert.deepStrictEqual(
+                qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion(),
+                true,
             );
         });
 
@@ -339,21 +346,20 @@ describe('q-template-validator', () => {
             ].on.ANSWER[0].cond[1] = '$.answers.p-foo.q-baz';
 
             const qHelper = createQuestionnaireTemplateHelper({
-                questionnaireTemplate: invalidTemplate
+                questionnaireTemplate: invalidTemplate,
             });
             const errors = qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion();
             const expectedErrors = [
                 {
                     type: 'ConditionDataReferenceNotFound',
-                    source:
-                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond',
+                    source: '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond',
                     description:
-                        "Condition data reference '/sections/p-foo/schema/properties/q-baz' not found"
-                }
+                        "Condition data reference '/sections/p-foo/schema/properties/q-baz' not found",
+                },
             ];
 
-            expect(errors.length).toEqual(expectedErrors.length);
-            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
+            assert.deepStrictEqual(errors.length, expectedErrors.length);
+            expectedErrors.forEach((expectedError) => assertContainsDeep(errors, [expectedError]));
         });
 
         describe('Nested JSON Expressions', () => {
@@ -364,13 +370,13 @@ describe('q-template-validator', () => {
                     [
                         '==',
                         '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
-                        false
+                        false,
                     ],
                     [
                         '==',
                         '$.answers.p-applicant-who-are-you-applying-for.q-applicant-who-are-you-applying-for',
-                        'someone-else'
-                    ]
+                        'someone-else',
+                    ],
                 ];
 
                 validTemplate.routes.states[
@@ -378,11 +384,12 @@ describe('q-template-validator', () => {
                 ].on.ANSWER[0].cond = nestedJsonExpression;
 
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: validTemplate
+                    questionnaireTemplate: validTemplate,
                 });
 
-                expect(qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion()).toEqual(
-                    true
+                assert.deepStrictEqual(
+                    qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion(),
+                    true,
                 );
             });
 
@@ -394,9 +401,9 @@ describe('q-template-validator', () => {
                     [
                         '==',
                         '$.answers.p-applicant-british-citizen-or-eu-national.q-applicant-british-citizen-or-eu-national',
-                        false
+                        false,
                     ],
-                    ['==', '$.answers.p-does-not-exist.q-does-not-exist', 'someone-else']
+                    ['==', '$.answers.p-does-not-exist.q-does-not-exist', 'someone-else'],
                 ];
 
                 // Make the valid questionnaire invalid
@@ -405,22 +412,21 @@ describe('q-template-validator', () => {
                 ].on.ANSWER[0].cond = nestedJsonExpression;
 
                 const qHelper = createQuestionnaireTemplateHelper({
-                    questionnaireTemplate: invalidTemplate
+                    questionnaireTemplate: invalidTemplate,
                 });
                 const errors = qHelper.ensureAllConditionDataReferencesHaveCorrespondingQuestion();
                 const expectedErrors = [
                     {
                         type: 'ConditionDataReferenceNotFound',
-                        source:
-                            '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond',
+                        source: '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond',
                         description:
-                            "Condition data reference '/sections/p-does-not-exist/schema/properties/q-does-not-exist' not found"
-                    }
+                            "Condition data reference '/sections/p-does-not-exist/schema/properties/q-does-not-exist' not found",
+                    },
                 ];
 
-                expect(errors.length).toEqual(expectedErrors.length);
-                expectedErrors.forEach(expectedError =>
-                    expect(errors).toContainEqual(expectedError)
+                assert.deepStrictEqual(errors.length, expectedErrors.length);
+                expectedErrors.forEach((expectedError) =>
+                    assertContainsDeep(errors, [expectedError]),
                 );
             });
         });
@@ -433,11 +439,11 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: validTemplate,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
 
-                expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
+                assert.deepStrictEqual(qHelper.ensureSectionSchemasAreValid(), true);
             });
 
             it('should return an error for each section schema that is invalid', () => {
@@ -454,20 +460,20 @@ describe('q-template-validator', () => {
                     properties: {
                         'q-applicant-british-citizen-or-eu-national': {
                             type: 'boolean',
-                            title: 'Are you a British citizen or EU national?'
-                        }
+                            title: 'Are you a British citizen or EU national?',
+                        },
                     },
                     errorMessage: {
                         required: {
                             'q-applicant-british-citizen-or-eu-national':
-                                'Select yes if you are a British citizen or EU national'
-                        }
+                                'Select yes if you are a British citizen or EU national',
+                        },
                     },
                     examples: [
                         {
-                            'q-applicant-british-citizen-or-eu-national': 'foo'
-                        }
-                    ]
+                            'q-applicant-british-citizen-or-eu-national': 'foo',
+                        },
+                    ],
                 };
 
                 // "q-applicant-are-you-18-or-over" expects a boolean, change one of the examples to a string
@@ -479,67 +485,65 @@ describe('q-template-validator', () => {
                     properties: {
                         'q-applicant-are-you-18-or-over': {
                             type: 'boolean',
-                            title: 'Are you 18 or over?'
-                        }
+                            title: 'Are you 18 or over?',
+                        },
                     },
                     errorMessage: {
                         required: {
-                            'q-applicant-are-you-18-or-over': 'Select yes if you are 18 or over'
-                        }
+                            'q-applicant-are-you-18-or-over': 'Select yes if you are 18 or over',
+                        },
                     },
                     examples: [
                         {
-                            'q-applicant-are-you-18-or-over': 'foo bar'
+                            'q-applicant-are-you-18-or-over': 'foo bar',
                         },
                         {
-                            'q-applicant-are-you-18-or-over': false
-                        }
-                    ]
+                            'q-applicant-are-you-18-or-over': false,
+                        },
+                    ],
                 };
 
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: invalidTemplate,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
                 const errors = qHelper.ensureSectionSchemasAreValid();
 
-                expect(errors).toEqual(
-                    expect.arrayContaining([
-                        {
-                            type: 'SectionSchemaFailed',
-                            source: '/sections/p-applicant-british-citizen-or-eu-national/schema',
-                            description: [
-                                {
-                                    dataPath: '/q-applicant-british-citizen-or-eu-national',
-                                    keyword: 'type',
-                                    message: 'should be boolean',
-                                    params: {
-                                        type: 'boolean'
-                                    },
-                                    schemaPath:
-                                        '#/properties/q-applicant-british-citizen-or-eu-national/type'
-                                }
-                            ]
-                        },
-                        {
-                            type: 'SectionSchemaFailed',
-                            source: '/sections/p-applicant-are-you-18-or-over/schema',
-                            description: [
-                                {
-                                    dataPath: '/q-applicant-are-you-18-or-over',
-                                    keyword: 'type',
-                                    message: 'should be boolean',
-                                    params: {
-                                        type: 'boolean'
-                                    },
-                                    schemaPath: '#/properties/q-applicant-are-you-18-or-over/type'
-                                }
-                            ]
-                        }
-                    ])
-                );
+                assertContainsDeep(errors, [
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: '/sections/p-applicant-british-citizen-or-eu-national/schema',
+                        description: [
+                            {
+                                dataPath: '/q-applicant-british-citizen-or-eu-national',
+                                keyword: 'type',
+                                message: 'should be boolean',
+                                params: {
+                                    type: 'boolean',
+                                },
+                                schemaPath:
+                                    '#/properties/q-applicant-british-citizen-or-eu-national/type',
+                            },
+                        ],
+                    },
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: '/sections/p-applicant-are-you-18-or-over/schema',
+                        description: [
+                            {
+                                dataPath: '/q-applicant-are-you-18-or-over',
+                                keyword: 'type',
+                                message: 'should be boolean',
+                                params: {
+                                    type: 'boolean',
+                                },
+                                schemaPath: '#/properties/q-applicant-are-you-18-or-over/type',
+                            },
+                        ],
+                    },
+                ]);
             });
 
             it('should return error(s) if a custom format fails validation', () => {
@@ -553,83 +557,80 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: validTemplate,
                     customSchemaFormats: {
-                        'mobile-uk': dummyFormatFunctionAlwaysFailsValidation
-                    }
+                        'mobile-uk': dummyFormatFunctionAlwaysFailsValidation,
+                    },
                 });
                 const errors = qHelper.ensureSectionSchemasAreValid();
 
-                expect(errors).toEqual(
-                    expect.arrayContaining([
-                        {
-                            type: 'SectionSchemaFailed',
-                            source: '/sections/p-applicant-enter-your-telephone-number/schema',
-                            description: [
-                                {
-                                    dataPath: '/q-applicant-enter-your-telephone-number',
-                                    keyword: 'format',
-                                    message: 'should match format "mobile-uk"',
-                                    params: {format: 'mobile-uk'},
-                                    schemaPath:
-                                        '#/properties/q-applicant-enter-your-telephone-number/format'
-                                }
-                            ]
-                        },
-                        {
-                            type: 'SectionSchemaFailed',
-                            source: '/sections/p-applicant-confirmation-method/schema',
-                            description: [
-                                {
-                                    dataPath: '/q-applicant-enter-your-telephone-number',
-                                    keyword: 'errorMessage',
-                                    message:
-                                        'Enter a UK mobile phone number, like 07700 900 982 or +44 7700 900 982',
-                                    params: {
-                                        errors: [
-                                            {
-                                                dataPath:
-                                                    '/q-applicant-enter-your-telephone-number',
-                                                keyword: 'format',
-                                                message: 'should match format "mobile-uk"',
-                                                params: {format: 'mobile-uk'},
-                                                schemaPath:
-                                                    '#/properties/q-applicant-enter-your-telephone-number/format'
-                                            }
-                                        ]
-                                    },
-                                    schemaPath:
-                                        '#/properties/q-applicant-enter-your-telephone-number/errorMessage'
-                                }
-                            ]
-                        },
-                        {
-                            type: 'SectionSchemaFailed',
-                            source: '/sections/p-mainapplicant-confirmation-method/schema',
-                            description: [
-                                {
-                                    dataPath: '/q-mainapplicant-enter-your-telephone-number',
-                                    keyword: 'errorMessage',
-                                    message:
-                                        'Enter a UK mobile phone number, like 07700 900 982 or +44 7700 900 982',
-                                    params: {
-                                        errors: [
-                                            {
-                                                dataPath:
-                                                    '/q-mainapplicant-enter-your-telephone-number',
-                                                keyword: 'format',
-                                                message: 'should match format "mobile-uk"',
-                                                params: {format: 'mobile-uk'},
-                                                schemaPath:
-                                                    '#/properties/q-mainapplicant-enter-your-telephone-number/format'
-                                            }
-                                        ]
-                                    },
-                                    schemaPath:
-                                        '#/properties/q-mainapplicant-enter-your-telephone-number/errorMessage'
-                                }
-                            ]
-                        }
-                    ])
-                );
+                assertContainsDeep(errors, [
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: '/sections/p-applicant-enter-your-telephone-number/schema',
+                        description: [
+                            {
+                                dataPath: '/q-applicant-enter-your-telephone-number',
+                                keyword: 'format',
+                                message: 'should match format "mobile-uk"',
+                                params: {format: 'mobile-uk'},
+                                schemaPath:
+                                    '#/properties/q-applicant-enter-your-telephone-number/format',
+                            },
+                        ],
+                    },
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: '/sections/p-applicant-confirmation-method/schema',
+                        description: [
+                            {
+                                dataPath: '/q-applicant-enter-your-telephone-number',
+                                keyword: 'errorMessage',
+                                message:
+                                    'Enter a UK mobile phone number, like 07700 900 982 or +44 7700 900 982',
+                                params: {
+                                    errors: [
+                                        {
+                                            dataPath: '/q-applicant-enter-your-telephone-number',
+                                            keyword: 'format',
+                                            message: 'should match format "mobile-uk"',
+                                            params: {format: 'mobile-uk'},
+                                            schemaPath:
+                                                '#/properties/q-applicant-enter-your-telephone-number/format',
+                                        },
+                                    ],
+                                },
+                                schemaPath:
+                                    '#/properties/q-applicant-enter-your-telephone-number/errorMessage',
+                            },
+                        ],
+                    },
+                    {
+                        type: 'SectionSchemaFailed',
+                        source: '/sections/p-mainapplicant-confirmation-method/schema',
+                        description: [
+                            {
+                                dataPath: '/q-mainapplicant-enter-your-telephone-number',
+                                keyword: 'errorMessage',
+                                message:
+                                    'Enter a UK mobile phone number, like 07700 900 982 or +44 7700 900 982',
+                                params: {
+                                    errors: [
+                                        {
+                                            dataPath:
+                                                '/q-mainapplicant-enter-your-telephone-number',
+                                            keyword: 'format',
+                                            message: 'should match format "mobile-uk"',
+                                            params: {format: 'mobile-uk'},
+                                            schemaPath:
+                                                '#/properties/q-mainapplicant-enter-your-telephone-number/format',
+                                        },
+                                    ],
+                                },
+                                schemaPath:
+                                    '#/properties/q-mainapplicant-enter-your-telephone-number/errorMessage',
+                            },
+                        ],
+                    },
+                ]);
             });
         });
 
@@ -639,11 +640,11 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: validTemplate,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
 
-                expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
+                assert.deepStrictEqual(qHelper.ensureSectionSchemasAreValid(), true);
             });
 
             it('should return an error for each section schema that passes validation against their invalid examples', () => {
@@ -660,20 +661,20 @@ describe('q-template-validator', () => {
                     properties: {
                         'q-applicant-british-citizen-or-eu-national': {
                             type: 'boolean',
-                            title: 'Are you a British citizen or EU national?'
-                        }
+                            title: 'Are you a British citizen or EU national?',
+                        },
                     },
                     errorMessage: {
                         required: {
                             'q-applicant-british-citizen-or-eu-national':
-                                'Select yes if you are a British citizen or EU national'
-                        }
+                                'Select yes if you are a British citizen or EU national',
+                        },
                     },
                     invalidExamples: [
                         {
-                            'q-applicant-british-citizen-or-eu-national': true
-                        }
-                    ]
+                            'q-applicant-british-citizen-or-eu-national': true,
+                        },
+                    ],
                 };
 
                 // give the invalidExamples valid examples
@@ -685,29 +686,29 @@ describe('q-template-validator', () => {
                     properties: {
                         'q-applicant-are-you-18-or-over': {
                             type: 'boolean',
-                            title: 'Are you 18 or over?'
-                        }
+                            title: 'Are you 18 or over?',
+                        },
                     },
                     errorMessage: {
                         required: {
-                            'q-applicant-are-you-18-or-over': 'Select yes if you are 18 or over'
-                        }
+                            'q-applicant-are-you-18-or-over': 'Select yes if you are 18 or over',
+                        },
                     },
                     invalidExamples: [
                         {
-                            'q-applicant-are-you-18-or-over': true
+                            'q-applicant-are-you-18-or-over': true,
                         },
                         {
-                            'q-applicant-are-you-18-or-over': false
-                        }
-                    ]
+                            'q-applicant-are-you-18-or-over': false,
+                        },
+                    ],
                 };
 
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: invalidTemplate,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
                 const errors = qHelper.ensureSectionSchemasAreValid();
                 const expectedErrors = [
@@ -715,25 +716,25 @@ describe('q-template-validator', () => {
                         type: 'SectionSchemaFailed',
                         source: '/sections/p-applicant-british-citizen-or-eu-national/schema',
                         description:
-                            "invalidExample '/sections/p-applicant-british-citizen-or-eu-national/schema/invalidExamples/0' should not pass schema validation"
+                            "invalidExample '/sections/p-applicant-british-citizen-or-eu-national/schema/invalidExamples/0' should not pass schema validation",
                     },
                     {
                         type: 'SectionSchemaFailed',
                         source: '/sections/p-applicant-are-you-18-or-over/schema',
                         description:
-                            "invalidExample '/sections/p-applicant-are-you-18-or-over/schema/invalidExamples/0' should not pass schema validation"
+                            "invalidExample '/sections/p-applicant-are-you-18-or-over/schema/invalidExamples/0' should not pass schema validation",
                     },
                     {
                         type: 'SectionSchemaFailed',
                         source: '/sections/p-applicant-are-you-18-or-over/schema',
                         description:
-                            "invalidExample '/sections/p-applicant-are-you-18-or-over/schema/invalidExamples/1' should not pass schema validation"
-                    }
+                            "invalidExample '/sections/p-applicant-are-you-18-or-over/schema/invalidExamples/1' should not pass schema validation",
+                    },
                 ];
 
-                expect(errors.length).toEqual(expectedErrors.length);
-                expectedErrors.forEach(expectedError =>
-                    expect(errors).toContainEqual(expectedError)
+                assert.deepStrictEqual(errors.length, expectedErrors.length);
+                expectedErrors.forEach((expectedError) =>
+                    assertContainsDeep(errors, [expectedError]),
                 );
             });
         });
@@ -746,11 +747,11 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: validTemplate,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
 
-                expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
+                assert.deepStrictEqual(qHelper.ensureSectionSchemasAreValid(), true);
             });
             it('Should error if a section does not have a meta property', () => {
                 const templateWithMissingMeta = getValidQuestionnaireTemplate();
@@ -759,17 +760,17 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: templateWithMissingMeta,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
                 const error = qHelper.ensureAllSectionsHaveThemes();
 
-                expect(error).toEqual([
+                assert.deepStrictEqual(error, [
                     {
                         type: 'SectionSchemaFailed',
                         source: `/sections/p-applicant-are-you-18-or-over/schema`,
-                        description: 'Schema does not contain meta data'
-                    }
+                        description: 'Schema does not contain meta data',
+                    },
                 ]);
             });
             it('Should error if section.meta does not have a classifications property', () => {
@@ -779,17 +780,17 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: templateWithMissingClassifications,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
                 const error = qHelper.ensureAllSectionsHaveThemes();
 
-                expect(error).toEqual([
+                assert.deepStrictEqual(error, [
                     {
                         type: 'SectionSchemaFailed',
                         source: `/sections/p-applicant-are-you-18-or-over/schema`,
-                        description: 'Schema does not contain classifications data'
-                    }
+                        description: 'Schema does not contain classifications data',
+                    },
                 ]);
             });
             it('Should error if section.meta.classifications does not have a theme property', () => {
@@ -799,17 +800,17 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: templateWithMissingTheme,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
                 const error = qHelper.ensureAllSectionsHaveThemes();
 
-                expect(error).toEqual([
+                assert.deepStrictEqual(error, [
                     {
                         type: 'SectionSchemaFailed',
                         source: `/sections/p-applicant-are-you-18-or-over/schema`,
-                        description: 'Schema does not contain theme data'
-                    }
+                        description: 'Schema does not contain theme data',
+                    },
                 ]);
             });
         });
@@ -819,11 +820,11 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: validTemplate,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
 
-                expect(qHelper.ensureSectionSchemasAreValid()).toEqual(true);
+                assert.deepStrictEqual(qHelper.ensureSectionSchemasAreValid(), true);
             });
             it('Should error if a section does not have a meta property', () => {
                 const templateWithMissingMeta2 = getValidQuestionnaireTemplate();
@@ -832,17 +833,17 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: templateWithMissingMeta2,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
                 const error = qHelper.ensureAllSectionsHaveThemes();
 
-                expect(error).toEqual([
+                assert.deepStrictEqual(error, [
                     {
                         type: 'SectionSchemaFailed',
                         source: `/sections/p-applicant-enter-your-name/schema`,
-                        description: 'Schema does not contain meta data'
-                    }
+                        description: 'Schema does not contain meta data',
+                    },
                 ]);
             });
             it('Should error if section.meta does not have a classifications property', () => {
@@ -852,17 +853,17 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: templateWithMissingClassifications,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
                 const error = qHelper.ensureAllSectionsHaveThemes();
 
-                expect(error).toEqual([
+                assert.deepStrictEqual(error, [
                     {
                         type: 'SectionSchemaFailed',
                         source: `/sections/p-applicant-enter-your-name/schema`,
-                        description: 'Schema does not contain classifications data'
-                    }
+                        description: 'Schema does not contain classifications data',
+                    },
                 ]);
             });
             it('Should error if section.meta.classifications does not have a theme property', () => {
@@ -872,17 +873,17 @@ describe('q-template-validator', () => {
                 const qHelper = createQuestionnaireTemplateHelper({
                     questionnaireTemplate: templateWithMissingTheme,
                     customSchemaFormats: {
-                        'mobile-uk': ajvFormatsMobileUk
-                    }
+                        'mobile-uk': ajvFormatsMobileUk,
+                    },
                 });
                 const error = qHelper.ensureAllSectionsHaveThemes();
 
-                expect(error).toEqual([
+                assert.deepStrictEqual(error, [
                     {
                         type: 'SectionSchemaFailed',
                         source: `/sections/p-applicant-enter-your-name/schema`,
-                        description: 'Schema does not contain theme data'
-                    }
+                        description: 'Schema does not contain theme data',
+                    },
                 ]);
             });
         });
@@ -893,37 +894,37 @@ describe('q-template-validator', () => {
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: validParallelTemplate,
                 customSchemaFormats: {
-                    'mobile-uk': ajvFormatsMobileUk
-                }
+                    'mobile-uk': ajvFormatsMobileUk,
+                },
             });
 
-            expect(qHelper.ensureAllRoutesReferencePageIdsOnSameMachine()).toEqual(true);
+            assert.deepStrictEqual(qHelper.ensureAllRoutesReferencePageIdsOnSameMachine(), true);
         });
 
         it('Should error if a target is not on the same machine as the state trying to route to it', () => {
-            const templateWithInvalidRoutes = validParallelTemplate;
+            const templateWithInvalidRoutes = JSON.parse(JSON.stringify(validParallelTemplate));
             templateWithInvalidRoutes.routes.states['t-about-application'].states[
                 'p-applicant-who-are-you-applying-for'
             ].on.ANSWER = [
                 {
-                    target: 'p--check-your-answers'
-                }
+                    target: 'p--check-your-answers',
+                },
             ];
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: templateWithInvalidRoutes,
                 customSchemaFormats: {
-                    'mobile-uk': ajvFormatsMobileUk
-                }
+                    'mobile-uk': ajvFormatsMobileUk,
+                },
             });
             const error = qHelper.ensureAllRoutesReferencePageIdsOnSameMachine();
 
-            expect(error).toEqual([
+            assert.deepStrictEqual(error, [
                 {
                     type: 'TargetNotFound',
                     source: `/routes/states/t-about-application/states/p-applicant-who-are-you-applying-for/on/ANSWER/0/target`,
                     description:
-                        "Target '/routes/states/t-about-application/states/p--check-your-answers' not found in 't-about-application'"
-                }
+                        "Target '/routes/states/t-about-application/states/p--check-your-answers' not found in 't-about-application'",
+                },
             ]);
         });
     });
@@ -933,15 +934,15 @@ describe('q-template-validator', () => {
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: validParallelTemplate,
                 customSchemaFormats: {
-                    'mobile-uk': ajvFormatsMobileUk
-                }
+                    'mobile-uk': ajvFormatsMobileUk,
+                },
             });
 
-            expect(qHelper.ensureAllSectionsAreOwnedByOneTaskOnly()).toEqual(true);
+            assert.deepStrictEqual(qHelper.ensureAllSectionsAreOwnedByOneTaskOnly(), true);
         });
 
         it('Should error if a questionId appears in more than one task.', () => {
-            const templateWithInvalidRoutes = validParallelTemplate;
+            const templateWithInvalidRoutes = JSON.parse(JSON.stringify(validParallelTemplate));
             templateWithInvalidRoutes.routes.states['t-about-application'].states[
                 'p--check-your-answers'
             ] =
@@ -951,19 +952,19 @@ describe('q-template-validator', () => {
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: templateWithInvalidRoutes,
                 customSchemaFormats: {
-                    'mobile-uk': ajvFormatsMobileUk
-                }
+                    'mobile-uk': ajvFormatsMobileUk,
+                },
             });
 
             const error = qHelper.ensureAllSectionsAreOwnedByOneTaskOnly();
 
-            expect(error).toEqual([
+            assert.deepStrictEqual(error, [
                 {
                     type: 'DuplicateSectionFound',
                     source: '/sections/p--check-your-answers',
                     description:
-                        "Section '/sections/p--check-your-answers' was found in more than one task"
-                }
+                        "Section '/sections/p--check-your-answers' was found in more than one task",
+                },
             ]);
         });
     });
@@ -974,11 +975,11 @@ describe('q-template-validator', () => {
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: validTemplate,
                 customSchemaFormats: {
-                    'mobile-uk': ajvFormatsMobileUk
-                }
+                    'mobile-uk': ajvFormatsMobileUk,
+                },
             });
 
-            expect(qHelper.validateTemplate()).toEqual(true);
+            assert.deepStrictEqual(qHelper.validateTemplate(), true);
         });
 
         it('should return an array of errors if the template is invalid', () => {
@@ -1009,62 +1010,60 @@ describe('q-template-validator', () => {
                         title: 'Are you 18 or over?',
                         meta: {
                             classifications: {
-                                theme: 'some-theme'
-                            }
-                        }
-                    }
+                                theme: 'some-theme',
+                            },
+                        },
+                    },
                 },
                 errorMessage: {
                     required: {
-                        'q-applicant-are-you-18-or-over': 'Select yes if you are 18 or over'
-                    }
+                        'q-applicant-are-you-18-or-over': 'Select yes if you are 18 or over',
+                    },
                 },
                 examples: [{'q-applicant-are-you-18-or-over': 'foo'}],
                 invalidExamples: [
                     {
-                        'q-applicant-are-you-18-or-over': true
+                        'q-applicant-are-you-18-or-over': true,
                     },
                     {
-                        'q-applicant-are-you-18-or-over': false
-                    }
-                ]
+                        'q-applicant-are-you-18-or-over': false,
+                    },
+                ],
             };
 
             const qHelper = createQuestionnaireTemplateHelper({
                 questionnaireTemplate: invalidTemplate,
                 customSchemaFormats: {
-                    'mobile-uk': ajvFormatsMobileUk
-                }
+                    'mobile-uk': ajvFormatsMobileUk,
+                },
             });
             const errors = qHelper.validateTemplate();
             const expectedErrors = [
                 {
                     type: 'RouteNotFound',
                     source: '/routes/initial',
-                    description: "Route '/routes/states/p-foo' not found"
+                    description: "Route '/routes/states/p-foo' not found",
                 },
                 {
                     type: 'RouteNotFound',
                     source: '/routes/summary',
-                    description: "Route '/routes/states/p-bar' not found"
+                    description: "Route '/routes/states/p-bar' not found",
                 },
                 {
                     type: 'RouteNotFound',
                     source: '/routes/confirmation',
-                    description: "Route '/routes/states/p-baz' not found"
+                    description: "Route '/routes/states/p-baz' not found",
                 },
                 {
                     type: 'TargetNotFound',
-                    source:
-                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/target',
-                    description: "Target '/routes/states/p-biz' not found"
+                    source: '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/target',
+                    description: "Target '/routes/states/p-biz' not found",
                 },
                 {
                     type: 'ConditionDataReferenceNotFound',
-                    source:
-                        '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond',
+                    source: '/routes/states/p-applicant-british-citizen-or-eu-national/on/ANSWER/0/cond',
                     description:
-                        "Condition data reference '/sections/p-foo/schema/properties/q-baz' not found"
+                        "Condition data reference '/sections/p-foo/schema/properties/q-baz' not found",
                 },
                 {
                     type: 'SectionSchemaFailed',
@@ -1075,46 +1074,46 @@ describe('q-template-validator', () => {
                             keyword: 'type',
                             message: 'should be boolean',
                             params: {
-                                type: 'boolean'
+                                type: 'boolean',
                             },
-                            schemaPath: '#/properties/q-applicant-are-you-18-or-over/type'
-                        }
-                    ]
+                            schemaPath: '#/properties/q-applicant-are-you-18-or-over/type',
+                        },
+                    ],
                 },
                 {
                     type: 'SectionSchemaFailed',
                     source: '/sections/p-applicant-are-you-18-or-over/schema',
                     description:
-                        "invalidExample '/sections/p-applicant-are-you-18-or-over/schema/invalidExamples/0' should not pass schema validation"
+                        "invalidExample '/sections/p-applicant-are-you-18-or-over/schema/invalidExamples/0' should not pass schema validation",
                 },
                 {
                     type: 'SectionSchemaFailed',
                     source: '/sections/p-applicant-are-you-18-or-over/schema',
                     description:
-                        "invalidExample '/sections/p-applicant-are-you-18-or-over/schema/invalidExamples/1' should not pass schema validation"
+                        "invalidExample '/sections/p-applicant-are-you-18-or-over/schema/invalidExamples/1' should not pass schema validation",
                 },
                 {
                     type: 'SectionNotFound',
                     source: '/routes/states/p-applicant-declaration',
-                    description: "Section '/sections/p-applicant-declaration' not found"
+                    description: "Section '/sections/p-applicant-declaration' not found",
                 },
                 {
                     type: 'UntargetedSection',
                     source: '/sections/p-applicant-fatal-claim',
                     description:
-                        "Section '/sections/p-applicant-fatal-claim' is not targeted by any route"
-                }
+                        "Section '/sections/p-applicant-fatal-claim' is not targeted by any route",
+                },
             ];
 
-            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
-            expect(errors.length).toEqual(expectedErrors.length);
+            expectedErrors.forEach((expectedError) => assertContainsDeep(errors, [expectedError]));
+            assert.deepStrictEqual(errors.length, expectedErrors.length);
         });
     });
 
     describe('Validate compiled', () => {
         const validTemplate = getValidQuestionnaireTemplate();
         const qHelper = createQuestionnaireTemplateHelper({
-            questionnaireTemplate: validTemplate
+            questionnaireTemplate: validTemplate,
         });
         describe('Remove elements from object', () => {
             it('should remove specified keys from a json structure', () => {
@@ -1123,19 +1122,19 @@ describe('q-template-validator', () => {
                     b: '2',
                     c: {
                         a: '3',
-                        b: '4'
-                    }
+                        b: '4',
+                    },
                 };
                 const arrayToDelete = ['b'];
                 const expected = {
                     a: '1',
                     c: {
-                        a: '3'
-                    }
+                        a: '3',
+                    },
                 };
                 const actual = qHelper.removeSchemaElements(json, arrayToDelete);
 
-                expect(expected).toEqual(actual);
+                assert.deepStrictEqual(expected, actual);
             });
 
             it('should remove specified keys from a "required" array', () => {
@@ -1145,8 +1144,8 @@ describe('q-template-validator', () => {
                     c: {
                         a: '3',
                         required: ['a', 'b', 'c'],
-                        notRequired: ['a', 'b', 'c']
-                    }
+                        notRequired: ['a', 'b', 'c'],
+                    },
                 };
                 const arrayToDelete = ['b'];
                 const expected = {
@@ -1155,12 +1154,12 @@ describe('q-template-validator', () => {
                     c: {
                         a: '3',
                         required: ['a', 'c'],
-                        notRequired: ['a', 'b', 'c']
-                    }
+                        notRequired: ['a', 'b', 'c'],
+                    },
                 };
                 const actual = qHelper.removeSchemaElements(json, arrayToDelete);
 
-                expect(expected).toEqual(actual);
+                assert.deepStrictEqual(expected, actual);
             });
         });
 
@@ -1171,56 +1170,56 @@ describe('q-template-validator', () => {
                         type: 'object',
                         properties: {
                             foo: {
-                                type: 'integer'
+                                type: 'integer',
                             },
                             bar: {
-                                type: 'string'
+                                type: 'string',
                             },
                             biz: {
                                 type: 'object',
                                 properties: {
                                     a: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     b: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     c: {
-                                        type: 'string'
-                                    }
+                                        type: 'string',
+                                    },
                                 },
-                                required: ['a', 'b', 'c']
+                                required: ['a', 'b', 'c'],
                             },
                             sections: {
-                                type: 'object'
+                                type: 'object',
                             },
                             routes: {
                                 type: 'object',
                                 properties: {
                                     states: {
-                                        type: 'object'
-                                    }
-                                }
-                            }
+                                        type: 'object',
+                                    },
+                                },
+                            },
                         },
                         required: ['foo'],
-                        additionalProperties: false
+                        additionalProperties: false,
                     },
                     questionnaireTemplate: {
                         foo: 1,
                         bar: 'abc',
                         biz: {
                             a: 'foo',
-                            c: 'bar'
+                            c: 'bar',
                         },
                         sections: {},
                         routes: {
-                            states: {}
-                        }
-                    }
+                            states: {},
+                        },
+                    },
                 });
 
-                expect(qTemplateHelper.isValidCompiledDocument(['b'])).toEqual(true);
+                assert.deepStrictEqual(qTemplateHelper.isValidCompiledDocument(['b']), true);
             });
 
             it('should return a single error if the template document is invalid', () => {
@@ -1229,12 +1228,12 @@ describe('q-template-validator', () => {
                     bar: 'abc',
                     biz: {
                         a: 'foo',
-                        c: 'bar'
+                        c: 'bar',
                     },
                     sections: {},
                     routes: {
-                        states: {}
-                    }
+                        states: {},
+                    },
                 };
 
                 // Make the valid questionnaire invalid
@@ -1245,46 +1244,46 @@ describe('q-template-validator', () => {
                         type: 'object',
                         properties: {
                             foo: {
-                                type: 'integer'
+                                type: 'integer',
                             },
                             bar: {
-                                type: 'string'
+                                type: 'string',
                             },
                             biz: {
                                 type: 'object',
                                 properties: {
                                     a: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     b: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     c: {
-                                        type: 'string'
-                                    }
+                                        type: 'string',
+                                    },
                                 },
-                                required: ['a', 'b', 'c']
+                                required: ['a', 'b', 'c'],
                             },
                             sections: {
-                                type: 'object'
+                                type: 'object',
                             },
                             routes: {
                                 type: 'object',
                                 properties: {
                                     states: {
-                                        type: 'object'
-                                    }
-                                }
-                            }
+                                        type: 'object',
+                                    },
+                                },
+                            },
                         },
                         required: ['foo'],
-                        additionalProperties: false
+                        additionalProperties: false,
                     },
-                    questionnaireTemplate: invalidTemplate
+                    questionnaireTemplate: invalidTemplate,
                 });
                 const errors = qTemplateHelper.isValidCompiledDocument(['b']);
 
-                expect(errors).toEqual({
+                assert.deepStrictEqual(errors, {
                     type: 'InvalidTemplateStructure',
                     source: '/',
                     description: [
@@ -1293,9 +1292,9 @@ describe('q-template-validator', () => {
                             keyword: 'required',
                             message: "should have required property 'foo'",
                             params: {missingProperty: 'foo'},
-                            schemaPath: '#/required'
-                        }
-                    ]
+                            schemaPath: '#/required',
+                        },
+                    ],
                 });
             });
 
@@ -1305,12 +1304,12 @@ describe('q-template-validator', () => {
                     bar: 'abc',
                     biz: {
                         a: 'foo',
-                        c: 'bar'
+                        c: 'bar',
                     },
                     sections: {},
                     routes: {
-                        states: {}
-                    }
+                        states: {},
+                    },
                 };
 
                 // Make the valid questionnaire invalid
@@ -1322,46 +1321,46 @@ describe('q-template-validator', () => {
                         type: 'object',
                         properties: {
                             foo: {
-                                type: 'integer'
+                                type: 'integer',
                             },
                             bar: {
-                                type: 'string'
+                                type: 'string',
                             },
                             biz: {
                                 type: 'object',
                                 properties: {
                                     a: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     b: {
-                                        type: 'string'
+                                        type: 'string',
                                     },
                                     c: {
-                                        type: 'string'
-                                    }
+                                        type: 'string',
+                                    },
                                 },
-                                required: ['a', 'b', 'c']
+                                required: ['a', 'b', 'c'],
                             },
                             sections: {
-                                type: 'object'
+                                type: 'object',
                             },
                             routes: {
                                 type: 'object',
                                 properties: {
                                     states: {
-                                        type: 'object'
-                                    }
-                                }
-                            }
+                                        type: 'object',
+                                    },
+                                },
+                            },
                         },
                         required: ['foo', 'bar'],
-                        additionalProperties: false
+                        additionalProperties: false,
                     },
-                    questionnaireTemplate: invalidTemplate
+                    questionnaireTemplate: invalidTemplate,
                 });
                 const errors = qTemplateHelper.isValidCompiledDocument(['b']);
 
-                expect(errors).toEqual({
+                assert.deepStrictEqual(errors, {
                     type: 'InvalidTemplateStructure',
                     source: '/',
                     description: [
@@ -1370,16 +1369,16 @@ describe('q-template-validator', () => {
                             keyword: 'required',
                             message: "should have required property 'foo'",
                             params: {missingProperty: 'foo'},
-                            schemaPath: '#/required'
+                            schemaPath: '#/required',
                         },
                         {
                             dataPath: '',
                             keyword: 'required',
                             message: "should have required property 'bar'",
                             params: {missingProperty: 'bar'},
-                            schemaPath: '#/required'
-                        }
-                    ]
+                            schemaPath: '#/required',
+                        },
+                    ],
                 });
             });
         });
@@ -1388,25 +1387,25 @@ describe('q-template-validator', () => {
     it('should export the questionnaire schema', () => {
         const validTemplate = getValidQuestionnaireTemplate();
         const templateValidator = createQuestionnaireTemplateHelper({
-            questionnaireTemplate: validTemplate
+            questionnaireTemplate: validTemplate,
         });
 
-        expect(templateValidator.schema).toEqual(schema);
+        assert.deepStrictEqual(templateValidator.schema, schema);
     });
 
     it('should export a copy of the questionnaire schema', () => {
         const validTemplate = getValidQuestionnaireTemplate();
         const templateValidator1 = createQuestionnaireTemplateHelper({
-            questionnaireTemplate: validTemplate
+            questionnaireTemplate: validTemplate,
         });
         const templateValidator2 = createQuestionnaireTemplateHelper({
-            questionnaireTemplate: validTemplate
+            questionnaireTemplate: validTemplate,
         });
         const schema1 = templateValidator1.schema;
         const schema2 = templateValidator2.schema;
 
         schema1.title = 'foo';
 
-        expect(schema1).not.toEqual(schema2);
+        assert.notDeepStrictEqual(schema1, schema2);
     });
 });

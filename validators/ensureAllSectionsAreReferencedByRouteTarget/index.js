@@ -2,7 +2,7 @@
 
 function getAllStateTargetIds(state) {
     const targets = state?.on?.ANSWER || [];
-    const targetIds = targets.map(targetDefinition => targetDefinition.target);
+    const targetIds = targets.map((targetDefinition) => targetDefinition.target);
 
     return targetIds;
 }
@@ -23,7 +23,7 @@ function getAllTargetIds(template) {
     }
     const allTargetIds = [initial];
 
-    Object.values(states).forEach(state => {
+    Object.values(states).forEach((state) => {
         const targetIds = getAllStateTargetIds(state);
 
         allTargetIds.push(...targetIds);
@@ -35,7 +35,7 @@ function getAllTargetIds(template) {
 function getAllInitialSectionIds(template) {
     if (template.routes.type === 'parallel') {
         const initialStates = [];
-        Object.keys(template.routes.states).forEach(task => {
+        Object.keys(template.routes.states).forEach((task) => {
             if (task.includes('__')) {
                 // skip the applicability and completion status tasks
                 return;
@@ -55,7 +55,7 @@ function ensureAllSectionsAreReferencedByRouteTarget({template, sectionIdIgnoreL
     const untargetedSectionIds = sectionIds.difference(targetIds.union(initialSectionIds));
     const errors = [];
 
-    untargetedSectionIds.forEach(untargetedSectionId => {
+    untargetedSectionIds.forEach((untargetedSectionId) => {
         if (sectionIdIgnoreList.includes(untargetedSectionId)) {
             return;
         }
@@ -63,7 +63,7 @@ function ensureAllSectionsAreReferencedByRouteTarget({template, sectionIdIgnoreL
         errors.push({
             type: 'UntargetedSection',
             source: `/sections/${untargetedSectionId}`,
-            description: `Section '/sections/${untargetedSectionId}' is not targeted by any route`
+            description: `Section '/sections/${untargetedSectionId}' is not targeted by any route`,
         });
     });
 

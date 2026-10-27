@@ -1,5 +1,8 @@
 'use strict';
 
+const assert = require('node:assert/strict');
+const {describe, it} = require('node:test');
+
 const getDataRefsFromJsonExpression = require('./index');
 
 describe('getDataRefsFromJsonExpression', () => {
@@ -7,14 +10,14 @@ describe('getDataRefsFromJsonExpression', () => {
         const jsonExpression = ['==', 1, 2];
         const dataRefs = getDataRefsFromJsonExpression(jsonExpression);
 
-        expect(dataRefs).toEqual([]);
+        assert.deepStrictEqual(dataRefs, []);
     });
 
     it('should return ref(s) for a flat expression', () => {
         const jsonExpression = ['==', '$.some.ref', 1, 'foo', '$.some.other.ref', null];
         const dataRefs = getDataRefsFromJsonExpression(jsonExpression);
 
-        expect(dataRefs).toEqual(['$.some.ref', '$.some.other.ref']);
+        assert.deepStrictEqual(dataRefs, ['$.some.ref', '$.some.other.ref']);
     });
 
     it('should return ref(s) for nested expressions', () => {
@@ -24,19 +27,19 @@ describe('getDataRefsFromJsonExpression', () => {
             [
                 'or',
                 ['==', '$.some.refC', 1, 'foo', '$.some.refD', null],
-                ['==', '$.some.refE', ['==', '$.some.refF', 1, 'foo', '$.some.refG', null]]
-            ]
+                ['==', '$.some.refE', ['==', '$.some.refF', 1, 'foo', '$.some.refG', null]],
+            ],
         ];
         const dataRefs = getDataRefsFromJsonExpression(jsonExpression);
 
-        expect(dataRefs).toEqual([
+        assert.deepStrictEqual(dataRefs, [
             '$.some.refA',
             '$.some.refB',
             '$.some.refC',
             '$.some.refD',
             '$.some.refE',
             '$.some.refF',
-            '$.some.refG'
+            '$.some.refG',
         ]);
     });
 });

@@ -1,6 +1,21 @@
 'use strict';
 
+const assert = require('node:assert/strict');
+const {describe, it} = require('node:test');
+const {isDeepStrictEqual} = require('node:util');
+
 const ensureAllSectionsAreTargetedByRouteTarget = require('./index');
+
+function assertContainsDeep(actual, expected) {
+    assert.ok(Array.isArray(actual), 'Expected an array');
+
+    expected.forEach((expectedItem) => {
+        assert.ok(
+            actual.some((actualItem) => isDeepStrictEqual(actualItem, expectedItem)),
+            `Expected array to contain ${JSON.stringify(expectedItem)}`,
+        );
+    });
+}
 
 describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
     describe('questionnaire', () => {
@@ -10,35 +25,36 @@ describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
                     foo: {},
                     bar: {},
                     baz: {},
-                    biz: {}
+                    biz: {},
                 },
                 routes: {
                     initial: 'foo',
                     states: {
                         foo: {
                             on: {
-                                ANSWER: [{target: 'bar'}]
-                            }
+                                ANSWER: [{target: 'bar'}],
+                            },
                         },
                         bar: {
                             on: {
-                                ANSWER: [{target: 'baz'}]
-                            }
+                                ANSWER: [{target: 'baz'}],
+                            },
                         },
                         baz: {
                             on: {
-                                ANSWER: [{target: 'biz'}]
-                            }
+                                ANSWER: [{target: 'biz'}],
+                            },
                         },
                         biz: {
-                            type: 'final'
-                        }
-                    }
-                }
+                            type: 'final',
+                        },
+                    },
+                },
             };
 
-            expect(ensureAllSectionsAreTargetedByRouteTarget({template: validTemplate})).toEqual(
-                true
+            assert.strictEqual(
+                ensureAllSectionsAreTargetedByRouteTarget({template: validTemplate}),
+                true,
             );
         });
 
@@ -48,38 +64,42 @@ describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
                     foo: {},
                     bar: {},
                     baz: {},
-                    biz: {}
+                    biz: {},
                 },
                 routes: {
                     initial: 'bar',
                     states: {
                         bar: {
                             on: {
-                                ANSWER: [{target: 'biz'}]
-                            }
+                                ANSWER: [{target: 'biz'}],
+                            },
                         },
                         biz: {
-                            type: 'final'
-                        }
-                    }
-                }
+                            type: 'final',
+                        },
+                    },
+                },
             };
-            const errors = ensureAllSectionsAreTargetedByRouteTarget({template: invalidTemplate});
+
+            const errors = ensureAllSectionsAreTargetedByRouteTarget({
+                template: invalidTemplate,
+            });
+
             const expectedErrors = [
                 {
                     type: 'UntargetedSection',
                     source: '/sections/foo',
-                    description: `Section '/sections/foo' is not targeted by any route`
+                    description: `Section '/sections/foo' is not targeted by any route`,
                 },
                 {
                     type: 'UntargetedSection',
                     source: '/sections/baz',
-                    description: `Section '/sections/baz' is not targeted by any route`
-                }
+                    description: `Section '/sections/baz' is not targeted by any route`,
+                },
             ];
 
-            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
-            expect(errors.length).toEqual(expectedErrors.length);
+            assertContainsDeep(errors, expectedErrors);
+            assert.strictEqual(errors.length, expectedErrors.length);
         });
 
         it('should ignore specified sections', () => {
@@ -88,38 +108,41 @@ describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
                     foo: {},
                     bar: {},
                     baz: {},
-                    biz: {}
+                    biz: {},
                 },
                 routes: {
                     initial: 'bar',
                     states: {
                         bar: {
                             on: {
-                                ANSWER: [{target: 'biz'}]
-                            }
+                                ANSWER: [{target: 'biz'}],
+                            },
                         },
                         biz: {
-                            type: 'final'
-                        }
-                    }
-                }
+                            type: 'final',
+                        },
+                    },
+                },
             };
+
             const errors = ensureAllSectionsAreTargetedByRouteTarget({
                 template: invalidTemplate,
-                sectionIdIgnoreList: ['foo']
+                sectionIdIgnoreList: ['foo'],
             });
+
             const expectedErrors = [
                 {
                     type: 'UntargetedSection',
                     source: '/sections/baz',
-                    description: `Section '/sections/baz' is not targeted by any route`
-                }
+                    description: `Section '/sections/baz' is not targeted by any route`,
+                },
             ];
 
-            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
-            expect(errors.length).toEqual(expectedErrors.length);
+            assertContainsDeep(errors, expectedErrors);
+            assert.strictEqual(errors.length, expectedErrors.length);
         });
     });
+
     describe('parallel', () => {
         it('should return true if all sections are targeted by at least one route target or are initial sections', () => {
             const validTemplate = {
@@ -127,7 +150,7 @@ describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
                     foo: {},
                     bar: {},
                     baz: {},
-                    biz: {}
+                    biz: {},
                 },
                 routes: {
                     id: 'parallel-routes',
@@ -138,37 +161,38 @@ describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
                             states: {
                                 foo: {
                                     on: {
-                                        ANSWER: [{target: 'bar'}]
-                                    }
-                                }
-                            }
+                                        ANSWER: [{target: 'bar'}],
+                                    },
+                                },
+                            },
                         },
                         't-bar': {
                             initial: 'bar',
                             states: {
                                 bar: {
                                     on: {
-                                        ANSWER: [{target: 'baz'}]
-                                    }
-                                }
-                            }
+                                        ANSWER: [{target: 'baz'}],
+                                    },
+                                },
+                            },
                         },
                         't-baz': {
                             initial: 'baz',
                             states: {
                                 baz: {
                                     on: {
-                                        ANSWER: [{target: 'biz'}]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                                        ANSWER: [{target: 'biz'}],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             };
 
-            expect(ensureAllSectionsAreTargetedByRouteTarget({template: validTemplate})).toEqual(
-                true
+            assert.strictEqual(
+                ensureAllSectionsAreTargetedByRouteTarget({template: validTemplate}),
+                true,
             );
         });
 
@@ -178,7 +202,7 @@ describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
                     foo: {},
                     bar: {},
                     baz: {},
-                    biz: {}
+                    biz: {},
                 },
                 routes: {
                     id: 'parallel-routes',
@@ -189,30 +213,34 @@ describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
                             states: {
                                 foo: {
                                     on: {
-                                        ANSWER: [{target: 'bar'}]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                                        ANSWER: [{target: 'bar'}],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             };
-            const errors = ensureAllSectionsAreTargetedByRouteTarget({template: invalidTemplate});
+
+            const errors = ensureAllSectionsAreTargetedByRouteTarget({
+                template: invalidTemplate,
+            });
+
             const expectedErrors = [
                 {
                     type: 'UntargetedSection',
                     source: '/sections/biz',
-                    description: `Section '/sections/biz' is not targeted by any route`
+                    description: `Section '/sections/biz' is not targeted by any route`,
                 },
                 {
                     type: 'UntargetedSection',
                     source: '/sections/baz',
-                    description: `Section '/sections/baz' is not targeted by any route`
-                }
+                    description: `Section '/sections/baz' is not targeted by any route`,
+                },
             ];
 
-            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
-            expect(errors.length).toEqual(expectedErrors.length);
+            assertContainsDeep(errors, expectedErrors);
+            assert.strictEqual(errors.length, expectedErrors.length);
         });
 
         it('should ignore specified sections', () => {
@@ -221,7 +249,7 @@ describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
                     foo: {},
                     bar: {},
                     baz: {},
-                    biz: {}
+                    biz: {},
                 },
                 routes: {
                     id: 'parallel-routes',
@@ -232,28 +260,30 @@ describe('ensureAllSectionsAreTargetedByRouteTarget', () => {
                             states: {
                                 foo: {
                                     on: {
-                                        ANSWER: [{target: 'bar'}]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                                        ANSWER: [{target: 'bar'}],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             };
+
             const errors = ensureAllSectionsAreTargetedByRouteTarget({
                 template: invalidTemplate,
-                sectionIdIgnoreList: ['baz']
+                sectionIdIgnoreList: ['baz'],
             });
+
             const expectedErrors = [
                 {
                     type: 'UntargetedSection',
                     source: '/sections/biz',
-                    description: `Section '/sections/biz' is not targeted by any route`
-                }
+                    description: `Section '/sections/biz' is not targeted by any route`,
+                },
             ];
 
-            expectedErrors.forEach(expectedError => expect(errors).toContainEqual(expectedError));
-            expect(errors.length).toEqual(expectedErrors.length);
+            assertContainsDeep(errors, expectedErrors);
+            assert.strictEqual(errors.length, expectedErrors.length);
         });
     });
 });

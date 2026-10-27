@@ -18,7 +18,7 @@ function createQuestionnaireTemplateHelper({
     convertJsonExpressionsToString = defaults.convertJsonExpressionsToString,
     getDataRefsFromJsonExpression = defaults.getDataRefsFromJsonExpression,
     getDuplicateSections = defaults.getDuplicateSections,
-    ensureAllSectionsAreReferencedByRouteTarget = defaults.ensureAllSectionsAreReferencedByRouteTarget
+    ensureAllSectionsAreReferencedByRouteTarget = defaults.ensureAllSectionsAreReferencedByRouteTarget,
 } = {}) {
     const questionnaire = JSON.parse(JSON.stringify(questionnaireTemplate));
     const {sections, routes} = questionnaire;
@@ -27,7 +27,7 @@ function createQuestionnaireTemplateHelper({
         jsonPointers: true,
         format: 'full',
         coerceTypes: false,
-        formats: customSchemaFormats
+        formats: customSchemaFormats,
     }); // options can be passed, e.g. {allErrors: true}
 
     AjvErrors(ajv);
@@ -35,10 +35,10 @@ function createQuestionnaireTemplateHelper({
     function getStates() {
         if (routes.type && routes.type === 'parallel') {
             let allStates = {};
-            Object.keys(routes.states).forEach(state => {
+            Object.keys(routes.states).forEach((state) => {
                 allStates = {
                     ...allStates,
-                    ...routes.states[state].states
+                    ...routes.states[state].states,
                 };
             });
             return allStates;
@@ -52,7 +52,7 @@ function createQuestionnaireTemplateHelper({
         const targets = state?.on?.ANSWER;
 
         if (Array.isArray(targets)) {
-            return targets.map(destination => destination.target);
+            return targets.map((destination) => destination.target);
         }
 
         return [];
@@ -68,7 +68,7 @@ function createQuestionnaireTemplateHelper({
                 if (condition) {
                     acc.push({
                         elements: condition,
-                        arrayIndex: i
+                        arrayIndex: i,
                     });
                 }
 
@@ -87,7 +87,7 @@ function createQuestionnaireTemplateHelper({
         return {
             type: 'RouteNotFound',
             source: sourcePath,
-            description: `Route '/routes/states/${stateId}' not found`
+            description: `Route '/routes/states/${stateId}' not found`,
         };
     }
 
@@ -103,7 +103,7 @@ function createQuestionnaireTemplateHelper({
         return {
             type: 'InvalidTemplateStructure',
             source: '/',
-            description: validate.errors
+            description: validate.errors,
         };
     }
 
@@ -114,7 +114,7 @@ function createQuestionnaireTemplateHelper({
                 acc.push({
                     type: 'RouteNotFound',
                     source: `/sections/${sectionId}`,
-                    description: `Route '/routes/states/${sectionId}' not found`
+                    description: `Route '/routes/states/${sectionId}' not found`,
                 });
             }
 
@@ -138,13 +138,13 @@ function createQuestionnaireTemplateHelper({
                     'completed',
                     'notApplicable',
                     'applicable',
-                    'cannotStartYet'
+                    'cannotStartYet',
                 ].includes(stateId)
             ) {
                 acc.push({
                     type: 'SectionNotFound',
                     source: `/routes/states/${stateId}`,
-                    description: `Section '/sections/${stateId}' not found`
+                    description: `Section '/sections/${stateId}' not found`,
                 });
             }
 
@@ -168,8 +168,8 @@ function createQuestionnaireTemplateHelper({
 
     // 2.3 - Does "summary" have a corresponding route
     function ensureSummaryRouteExists() {
-        const results = routes.summary.map(stateId => routeExists(stateId, '/routes/summary'));
-        const errors = results.filter(result => result !== true);
+        const results = routes.summary.map((stateId) => routeExists(stateId, '/routes/summary'));
+        const errors = results.filter((result) => result !== true);
 
         if (errors.length > 0) {
             return errors;
@@ -190,13 +190,13 @@ function createQuestionnaireTemplateHelper({
             const targets = getAllTargets(state);
 
             targets.forEach((target, i) => {
-                if (
-                    !(target.replace('#', '') in states || target.replace('#', '') in routes.states)
-                ) {
+                if (!(
+                    target.replace('#', '') in states || target.replace('#', '') in routes.states
+                )) {
                     acc.push({
                         type: 'TargetNotFound',
                         source: `/routes/states/${stateId}/on/ANSWER/${i}/target`,
-                        description: `Target '/routes/states/${target}' not found`
+                        description: `Target '/routes/states/${target}' not found`,
                     });
                 }
             });
@@ -217,11 +217,11 @@ function createQuestionnaireTemplateHelper({
             const state = states[stateId];
             const conditions = getAllConditions(state);
 
-            conditions.forEach(condition => {
+            conditions.forEach((condition) => {
                 const jsonExpression = condition.elements;
                 const dataRefs = getDataRefsFromJsonExpression(jsonExpression);
 
-                dataRefs.forEach(dataRef => {
+                dataRefs.forEach((dataRef) => {
                     const [, , sectionId, questionId] = dataRef.split('.');
                     const data = sections?.[sectionId]?.schema?.properties?.[questionId];
 
@@ -229,7 +229,7 @@ function createQuestionnaireTemplateHelper({
                         acc.push({
                             type: 'ConditionDataReferenceNotFound',
                             source: `/routes/states/${stateId}/on/ANSWER/${condition.arrayIndex}/cond`,
-                            description: `Condition data reference '/sections/${sectionId}/schema/properties/${questionId}' not found`
+                            description: `Condition data reference '/sections/${sectionId}/schema/properties/${questionId}' not found`,
                         });
                     }
                 });
@@ -256,14 +256,14 @@ function createQuestionnaireTemplateHelper({
 
             // for each valid example ensure there are no errors
             if (validExamples) {
-                validExamples.forEach(validExample => {
+                validExamples.forEach((validExample) => {
                     const valid = validate(validExample);
 
                     if (!valid) {
                         acc.push({
                             type: 'SectionSchemaFailed',
                             source: `/sections/${sectionId}/schema`,
-                            description: validate.errors
+                            description: validate.errors,
                         });
                     }
                 });
@@ -278,7 +278,7 @@ function createQuestionnaireTemplateHelper({
                         acc.push({
                             type: 'SectionSchemaFailed',
                             source: `/sections/${sectionId}/schema`,
-                            description: `invalidExample '/sections/${sectionId}/schema/invalidExamples/${i}' should not pass schema validation`
+                            description: `invalidExample '/sections/${sectionId}/schema/invalidExamples/${i}' should not pass schema validation`,
                         });
                     }
                 });
@@ -311,25 +311,25 @@ function createQuestionnaireTemplateHelper({
                 // Error
 
                 if ('allOf' in sectionSchema) {
-                    sectionSchema.allOf.forEach(property => {
+                    sectionSchema.allOf.forEach((property) => {
                         if ('title' in property) {
                             if (!('meta' in property)) {
                                 acc.push({
                                     type: 'SectionSchemaFailed',
                                     source: `/sections/${sectionId}/schema`,
-                                    description: 'Schema does not contain meta data'
+                                    description: 'Schema does not contain meta data',
                                 });
                             } else if (!('classifications' in property.meta)) {
                                 acc.push({
                                     type: 'SectionSchemaFailed',
                                     source: `/sections/${sectionId}/schema`,
-                                    description: 'Schema does not contain classifications data'
+                                    description: 'Schema does not contain classifications data',
                                 });
                             } else if (!('theme' in property.meta.classifications)) {
                                 acc.push({
                                     type: 'SectionSchemaFailed',
                                     source: `/sections/${sectionId}/schema`,
-                                    description: 'Schema does not contain theme data'
+                                    description: 'Schema does not contain theme data',
                                 });
                             }
                         }
@@ -337,13 +337,13 @@ function createQuestionnaireTemplateHelper({
                 }
 
                 if ('properties' in sectionSchema) {
-                    Object.keys(sectionSchema.properties).forEach(property => {
+                    Object.keys(sectionSchema.properties).forEach((property) => {
                         if ('type' in sectionSchema.properties[property]) {
                             if (!('meta' in sectionSchema.properties[property])) {
                                 acc.push({
                                     type: 'SectionSchemaFailed',
                                     source: `/sections/${sectionId}/schema`,
-                                    description: 'Schema does not contain meta data'
+                                    description: 'Schema does not contain meta data',
                                 });
                             } else if (
                                 !('classifications' in sectionSchema.properties[property].meta)
@@ -351,7 +351,7 @@ function createQuestionnaireTemplateHelper({
                                 acc.push({
                                     type: 'SectionSchemaFailed',
                                     source: `/sections/${sectionId}/schema`,
-                                    description: 'Schema does not contain classifications data'
+                                    description: 'Schema does not contain classifications data',
                                 });
                             } else if (
                                 !(
@@ -362,7 +362,7 @@ function createQuestionnaireTemplateHelper({
                                 acc.push({
                                     type: 'SectionSchemaFailed',
                                     source: `/sections/${sectionId}/schema`,
-                                    description: 'Schema does not contain theme data'
+                                    description: 'Schema does not contain theme data',
                                 });
                             }
                         }
@@ -384,8 +384,8 @@ function createQuestionnaireTemplateHelper({
     function ensureAllRoutesReferencePageIdsOnSameMachine() {
         if (routes.type === 'parallel') {
             const errors = [];
-            Object.keys(routes.states).forEach(task => {
-                Object.keys(routes.states[task].states).forEach(stateId => {
+            Object.keys(routes.states).forEach((task) => {
+                Object.keys(routes.states[task].states).forEach((stateId) => {
                     const targets = getAllTargets(routes.states[task].states[stateId]);
 
                     targets.forEach((target, i) => {
@@ -393,7 +393,7 @@ function createQuestionnaireTemplateHelper({
                             errors.push({
                                 type: 'TargetNotFound',
                                 source: `/routes/states/${task}/states/${stateId}/on/ANSWER/${i}/target`,
-                                description: `Target '/routes/states/${task}/states/${target}' not found in '${task}'`
+                                description: `Target '/routes/states/${task}/states/${target}' not found in '${task}'`,
                             });
                         }
                     });
@@ -413,26 +413,26 @@ function createQuestionnaireTemplateHelper({
         if (routes.type === 'parallel') {
             const errors = [];
             const taskStates = [];
-            Object.keys(routes.states).forEach(task => {
+            Object.keys(routes.states).forEach((task) => {
                 taskStates.push(Object.keys(routes.states[task].states));
             });
             const duplicateSections = getDuplicateSections(taskStates);
 
             if (duplicateSections.length > 0) {
-                duplicateSections.forEach(sectionId => {
+                duplicateSections.forEach((sectionId) => {
                     if (
                         ![
                             'completed',
                             'incomplete',
                             'applicable',
                             'notApplicable',
-                            'cannotStartYet'
+                            'cannotStartYet',
                         ].includes(sectionId)
                     ) {
                         errors.push({
                             type: 'DuplicateSectionFound',
                             source: `/sections/${sectionId}`,
-                            description: `Section '/sections/${sectionId}' was found in more than one task`
+                            description: `Section '/sections/${sectionId}' was found in more than one task`,
                         });
                     }
                 });
@@ -465,8 +465,8 @@ function createQuestionnaireTemplateHelper({
                 ensureAllSectionsAreOwnedByOneTaskOnly(),
                 ensureAllSectionsAreReferencedByRouteTarget({
                     template: questionnaire,
-                    sectionIdIgnoreList: ['system', 'owner', 'origin']
-                })
+                    sectionIdIgnoreList: ['system', 'owner', 'origin'],
+                }),
             );
         }
 
@@ -484,7 +484,6 @@ function createQuestionnaireTemplateHelper({
         }, []);
 
         if (errors.length > 0) {
-            // eslint-disable-next-line no-console
             console.log(JSON.stringify(errors, null, 4));
 
             return errors;
@@ -494,15 +493,15 @@ function createQuestionnaireTemplateHelper({
     }
 
     // Remove parts of a schema structure in order to test compiled schemas
-    /* eslint-disable no-param-reassign */
+
     function removeSchemaElements(obj, unwantedKeyArray) {
         const result = obj;
-        unwantedKeyArray.forEach(unwantedKey => {
-            Object.keys(result).forEach(key => {
+        unwantedKeyArray.forEach((unwantedKey) => {
+            Object.keys(result).forEach((key) => {
                 if (unwantedKey === key) {
                     delete result[key];
                 } else if (key === 'required' && Array.isArray(result[key])) {
-                    result[key] = result[key].filter(e => e !== unwantedKey);
+                    result[key] = result[key].filter((e) => e !== unwantedKey);
                 } else if (typeof result[key] === 'object') {
                     removeSchemaElements(result[key], unwantedKeyArray);
                 }
@@ -510,7 +509,6 @@ function createQuestionnaireTemplateHelper({
         });
         return result;
     }
-    /* eslint-enable no-param-reassign */
 
     // Check if compiled document is valid.
     // removedElementsArray - Array of strings which will be removed form the qSchema object, eg ["examples", "invalidExamples"]
@@ -526,7 +524,7 @@ function createQuestionnaireTemplateHelper({
         return {
             type: 'InvalidTemplateStructure',
             source: '/',
-            description: validate.errors
+            description: validate.errors,
         };
     }
 
@@ -546,7 +544,7 @@ function createQuestionnaireTemplateHelper({
         removeSchemaElements,
         isValidCompiledDocument,
         ensureAllSectionsHaveThemes,
-        schema: JSON.parse(JSON.stringify(qSchema)) // qSchema
+        schema: JSON.parse(JSON.stringify(qSchema)), // qSchema
     });
 }
 

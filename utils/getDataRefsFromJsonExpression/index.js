@@ -7,7 +7,7 @@ function isDataReference(element) {
 function getDataRefsFromJsonExpression(jsonExpression) {
     const dataRefs = [];
 
-    jsonExpression.forEach(element => {
+    jsonExpression.forEach((element) => {
         if (isDataReference(element)) {
             dataRefs.push(element);
         }

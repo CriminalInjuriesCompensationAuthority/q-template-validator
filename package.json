@@ -4,29 +4,33 @@
     "description": "Ensure questionnaire templates are valid",
     "main": "index.js",
     "engines": {
-        "npm": ">=8.5.2",
-        "node": ">=16.0.0"
+        "node": ">=24.0.0",
+        "npm": ">=11.0.0"
     },
     "scripts": {
-        "test": "jest",
-        "coverage": "jest --coverage",
+        "test": "node --test",
+        "test:watch": "node --test --watch",
+        "coverage": "node --test --experimental-test-coverage",
         "lint": "eslint .",
-        "lint:fix": "eslint --fix ."
+        "lint:fix": "eslint --fix .",
+        "prepare": "husky"
+    },
+    "lint-staged": {
+        "*.{js,cjs,mjs}": "eslint --fix",
+        "*.{json,yml,yaml}": "prettier --write"
     },
     "author": "CICA",
     "license": "MIT",
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "ajv-formats-mobile-uk": "github:CriminalInjuriesCompensationAuthority/ajv-formats-mobile-uk#v1.0.1",
-        "eslint": "^7.32.0",
-        "eslint-config-airbnb-base": "^14.2.1",
-        "eslint-config-prettier": "^6.9.0",
-        "eslint-plugin-import": "^2.19.1",
-        "eslint-plugin-jest": "^23.3.0",
-        "eslint-plugin-prettier": "^3.1.2",
-        "husky": "^4.0.3",
-        "jest": "^28.1.3",
-        "lint-staged": "^9.5.0",
-        "prettier": "^1.19.1"
+        "eslint": "^10.13.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.7",
+        "globals": "^17.13.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^17.6.0",
+        "prettier": "^3.9.10"
     },
     "dependencies": {
         "ajv": "^6.12.0",
