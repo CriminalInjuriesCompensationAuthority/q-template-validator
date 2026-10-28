@@ -13,7 +13,7 @@
         "coverage": "node --test --experimental-test-coverage",
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
-        "prepare": "husky"
+        "prepare": "node .husky/install.mjs"
     },
     "lint-staged": {
         "*.{js,cjs,mjs}": "eslint --fix",
